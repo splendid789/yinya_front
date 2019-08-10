@@ -1,0 +1,52 @@
+{
+    "pages": [
+        "pages/index/main",
+        "pages/request/main",
+        "pages/exchange/main",
+      "pages/uploadact/main",
+      "pages/record/main",
+    "pages/discover/main",
+    "pages/message/main",
+    "pages/mine/main"
+  ],
+  "window": {
+    "backgroundTextStyle": "dark",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "navigationBarTitleText": "音吖",
+    "navigationBarTextStyle": "black"
+  },
+  "tabBar": {
+    "color": "#BBBBBB",
+    "selectedColor": "#FB9F00",
+    "borderStyle": "white",
+    "backgroundColor": "#fff",
+    "position": "bottom",
+    "list": [
+        {
+            "pagePath": "pages/message/main",
+            "selectedIconPath": "/assets/images/icon-message-active.png",
+            "iconPath": "/assets/images/icon-message.png",
+            "text": "消息"
+        }, 
+        {
+            "pagePath": "pages/discover/main",
+            "selectedIconPath": "/assets/images/icon-discover-active.png",
+            "iconPath": "/assets/images/icon-discover.png",
+            "text": "发现"
+        }, 
+        {
+            "pagePath": "pages/mine/main",
+            "selectedIconPath": "/assets/images/icon-mine-active.png",
+            "iconPath": "/assets/images/icon-mine.png",
+            "text": "我的"
+        }
+    ]
+  },
+  "usingComponents": {
+    "van-dialog": "/static/vant/dialog/index",
+    "van-button": "/static/vant/button/index",
+    "van-tab": "/static/vant/tab/index",
+    "van-tabs": "/static/vant/tabs/index",
+    "i-toast": "/static/iview/toast/index"
+  }
+}
