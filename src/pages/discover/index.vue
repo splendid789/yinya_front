@@ -1,11 +1,11 @@
 <template>
 <div class="discover-page">
-  <div class="stack">
-    <div class="stack-item" v-for="(item, index) in friends" :key="index"
+  <div class="stack" v-if="friends.length > 0">
+    <div class="stack-item hideSlow" v-for="(item, index) in friends" :key="index"
          :style="index === current
-         ? ('transform:translate3D(' + poswidth + 'px' + ',' + posheight + 'px' + ',0px);opacity:'+ opacity +';z-index:10;'+ (animation?'transitionTimingFunction:ease;transitionDuration:300ms;':''))
-         : (index <= (current + visible - 1)
-         ? 'opacity:1;transform:translate3D(0,0,' + (-1 * (index - current) * 60) + 'px' + ');z-index:'+(visible - index + current)+';transitionTimingFunction:ease;transitionDuration:300ms;'
+         ? ('transform:translate3D(' + poswidth + 'px' + ',' + posheight + 'px' + ',0px);opacity:'+ opacity +';z-index:10;'+ (animation?'transition-timing-function:linear;transition-duration:650ms;':''))
+         : (index >= current && index <= (current + visible - 1)
+         ? 'opacity:1;transform:translate3D(0,0,' + (-1 * (index - current) * 60) + 'px' + ');z-index:'+(visible - index + current)+';transition-timing-function:linear;transition-duration:650ms;'
          : 'z-index:-1;transform:translate3D(0,0,' + (-1 * visible * 60) + 'px' + ');')"
          @touchstart="touchStart"
          @touchmove="touchMove"
@@ -14,12 +14,60 @@
       <div class="card-content">
         <img :src="item.head_img" class="user-avatar" alt="">
         <div class="user-nickname">{{item.nickname}}</div>
-        <div class="audio-operator">
-          <img @click.stop="clickPlay" :src="'../../assets/images/' + (!item.playFlag ? 'icon-play.png': 'icon-pause.png') " alt="">
-        </div>
+        <form :data-id="item.id" report-submit @submit="clickPlay">
+          <button class="audio-operator" form-type="submit">
+            <img :src="'../../assets/images/' + (!item.playFlag ? 'icon-play.png': 'icon-pause.png') " alt="">
+          </button>
+        </form>
       </div>
     </div>
   </div>
+  <div v-if="!isExchangePic" :class="{'exchange-pic': true}">
+    <form report-submit @submit="exchange">
+      <button class="btn-exchange" form-type="submit">加Ta微信
+      </button>
+    </form>
+  </div>
+  <div v-if="isExchangePic" :class="{'exchange-pic': true, 'showAnimation': isExchangePic}" style="color: #F4CF24; font-size: 16px;">已通知对方</div>
+  <van-dialog
+    use-slot
+    :show="isUploadFile"
+    :showConfirmButton="false"
+    :showCancelButton="false"
+  >
+    <div class="dialog-container">
+      <div class="top-border"></div>
+      <div class="dialog-content">
+        <div class="dialog-text">
+          <div>完善信息后即可加Ta微信</div>
+        </div>
+        <div class="dialog-upload">
+          <div @click="toUpload" class="upload-btn">立即完善</div>
+        </div>
+        <img @click="closeDialog" src="../../assets/images/icon-close.png" alt="" class="close">
+      </div>
+    </div>
+  </van-dialog>
+  <van-dialog
+    use-slot
+    :show="isExchangeOk"
+    :showConfirmButton="false"
+    :showCancelButton="false"
+  >
+    <div class="dialog-container">
+      <div class="top-border"></div>
+      <div class="dialog-content">
+        <div class="dialog-text">
+          <div>Ta已收到你的请求</div>
+          <div>同意后即可互加微信</div>
+        </div>
+        <div class="dialog-upload">
+          <div @click="closeExchangeOk" class="upload-btn">我知道了</div>
+        </div>
+        <img style="display: none;" @click="closeDialog" src="../../assets/images/icon-close.png" alt="" class="close">
+      </div>
+    </div>
+  </van-dialog>
 </div>
 </template>
 
@@ -27,6 +75,7 @@
 import {mapMutations, mapGetters} from 'vuex';
 import WxApi from '../../utils/WxApi'
 const wxApi = new WxApi();
+const { $Toast } = require('../../../static/iview/base/index');
 export default {
     data() {
         return {
@@ -36,8 +85,8 @@ export default {
           opacity: 1, // 记录opacity
           zIndex: 10, // 记录zIndex
           visible: 3, // 记录默认显示堆叠数visible
-          poswidth: '', // 记录位移
-          posheight: '', // 记录位移
+          poswidth: '0', // 记录位移
+          posheight: '0', // 记录位移
           lastPosWidth: '', // 记录上次最终位移
           lastPosHeight: '', // 记录上次最终位移
           tracking: false, // 是否在滑动，防止多次操作，影响体验
@@ -45,27 +94,74 @@ export default {
           opacity: 1, // 记录首图透明度
           swipe: false, // onTransition判定条件
           friends: [],
-          innerAudioContext:null
+          innerAudioContext:null,
+          isUploadFile: false,
+          isExchangePic: false,
+          isExchangeOk: false,
         }
     },
     computed: {
         ...mapGetters(['userInfo', 'isFirst']),
     },
-    async onShow() {
-      this.friends = await this.getFriendInfo(5);
-      this.playAudio(this.current);
+    onShow() {
+      if(this.userInfo.file && this.userInfo.wechat_number) {
+        this.isUploadFile = false;
+      }
+      if(!this.userInfo.file || !this.userInfo.wechat_number) {
+        this.setIsFirst(true);
+      }
+      this.innerAudioContext = mpvue.createInnerAudioContext();
       mpvue.setInnerAudioOption({
         obeyMuteSwitch: false
       });
+      if(this.friends.length > 0){
+        this.playAudio(this.current);
+      }
     },
-    onLoad() {
+    async onLoad() {
+      this.start = {};
+      this.end = {};
+      this.current = 0;
+      this.opacity = 1;
+      this.zIndex = 10;
+      this.visible = 3;
+      this.poswidth = '0';
+      this.posheight = '0';
+      this.lastPosWidth = '';
+      this.lastPosHeight = '';
+      this.tracking = false;
+      this.animation = false;
+      this.swipe = false;
+      this.friends = [];
 
+      this.friends = await this.getFriendInfo(10);
+      this.playAudio(this.current);
     },
     onHide() {
-
+      this.innerAudioContext.destroy()
     },
     methods: {
       ...mapMutations(['setUserInfoAuth', 'setUserInfo', 'setInnerAudioContext', 'setIsFirst']),
+      closeDialog() {
+        this.isUploadFile = false;
+      },
+      toUpload() {
+        if(!this.userInfo.file) {
+          let url = '/pages/record/main?root=discover';
+          this.isUploadFile = false;
+          wx.navigateTo({url});
+          return;
+        }
+        if(!this.userInfo.wechat_number) {
+          let url = '/pages/uploadact/main?root=discover';
+          this.isUploadFile = false;
+          wx.navigateTo({url});
+        }
+      },
+      closeExchangeOk() {
+        this.isExchangeOk = false;
+        this.setIsFirst(false);
+      },
       async getFriendInfo(num) {
         let config = {
           url: 'users/find_friend/?num=' + num,
@@ -77,15 +173,16 @@ export default {
         });
         return resInfo.results;
       },
-      clickPlay(){
-          if(this.friends[this.current].playFlag){
-            this.innerAudioContext.pause();
-          }else{
-            this.innerAudioContext.play();
-          }
+      async clickPlay(e){
+        let formId = e.mp.detail.formId;
+        if(this.friends[this.current].playFlag){
+          this.innerAudioContext.stop();
+        }else{
+          this.innerAudioContext.play();
+        }
+        await this.collectionFormId(formId);
       },
       playAudio(current){
-        this.innerAudioContext = mpvue.createInnerAudioContext();
         this.innerAudioContext.autoplay = true;
         this.innerAudioContext.src = this.friends[current].file;
         this.innerAudioContext.onPlay(()=>{
@@ -94,8 +191,11 @@ export default {
         this.innerAudioContext.onEnded(()=>{
           this.friends[current].playFlag = false;
         });
-        this.innerAudioContext.onPause(()=>{
+        this.innerAudioContext.onStop(()=>{
           this.friends[current].playFlag = false;
+        });
+        this.innerAudioContext.onError((errCode)=>{
+          console.log('error=',errCode)
         });
       },
       touchStart (e) {
@@ -126,17 +226,16 @@ export default {
           this.posheight = this.end.y - this.start.y
         }
       },
-      touchEnd (e) {
+      async touchEnd (e) {
         this.tracking = false
         this.animation = true
         // 滑动结束，触发判断
         // 简单判断滑动宽度超出100像素时触发滑出
-        if (Math.abs(this.poswidth) >= 100) {
+        if (Math.abs(this.poswidth) >= 60 || Math.abs(this.posheight) >= 60) {
           // 最终位移简单设定为x轴200像素的偏移
           let ratio = Math.abs(this.posheight / this.poswidth)
           this.poswidth = this.poswidth >= 0 ? this.poswidth + 200 : this.poswidth - 200
           this.posheight = this.posheight >= 0 ? Math.abs(this.poswidth * ratio) : -Math.abs(this.poswidth * ratio)
-          this.opacity = 0
           this.swipe = true
           // 记录最终滑动距离
           this.lastPosWidth = this.poswidth
@@ -146,9 +245,17 @@ export default {
           // currentPage切换，整体dom进行变化，把第一层滑动置零
           this.poswidth = 0
           this.posheight = 0
-          this.opacity = 1
-          // 不满足条件则滑入
-        } else {
+          this.playAudio(this.current)
+          if(this.friends.length - this.current < 6){
+            let friends = await this.getFriendInfo(10);
+            console.log(friends)
+            for (let i = 0;i < friends.length;i++) {
+                this.friends.push(friends[i]);
+            }
+          }
+        }
+        // 不满足条件则滑入
+        else {
           this.poswidth = 0
           this.posheight = 0
           this.swipe = false
@@ -157,9 +264,47 @@ export default {
           this.animation = true
           this.lastPosWidth = 0
           this.lastPosHeight = 0
+          this.opacity = 1
           this.swipe = false
-          this.friends.splice(0,1)
+          this.isUploadFile = false
+          this.isExchangePic = false
         }
+      },
+      async collectionFormId(formid) {
+        let config = {
+          url: 'exchange/collect_formid/',
+          method: 'post',
+          data: {formid}
+        };
+        let resInfo = await wxApi.request(config);
+        if(resInfo.errno === 0) {
+        }
+        else {
+        }
+      },
+      async exchange(e) {
+        let formId = e.mp.detail.formId;
+        console.log(!this.userInfo.file)
+        console.log(!this.userInfo.wechat_number)
+        if(!this.userInfo.file || !this.userInfo.wechat_number) {
+          this.isUploadFile = true;
+          return;
+        }
+        this.isExchangePic = true;
+        let config = {
+          url: 'exchange/',
+          method: 'post',
+          data: {
+            user_id: this.friends[this.current].id
+          }
+        }
+        let resInfo = await wxApi.request(config);
+        setTimeout(() => {
+          if(this.isFirst) {
+            this.isExchangeOk = true;
+          }
+        }, 800);
+        await this.collectionFormId(formId);
       },
     }
 }
@@ -237,5 +382,173 @@ export default {
       }
     }
   }
+  .exchange-pic {
+    position: absolute;
+    top: 421px;
+    height: 45px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    .btn-exchange {
+      display: block;
+      padding: 0;
+      margin: 0;
+      width: 140px;
+      height: 40px;
+      background: -webkit-linear-gradient(left,#FBCF00, #FB9F00);
+      font-size: 16px;
+      color: #fff;
+      text-align: center;
+      line-height: 40px;
+      border-radius: 2px;
+    }
+    .btn-exchange::after {
+      border: none;
+    }
+  }
+  .dialog-container {
+    width: 326px;
+    height: 254px;
+    background-color: #fff;
+    border-radius: 4px;
+    .top-border {
+      height: 7px;
+      border-radius: 4px 4px 0 0;
+      background-color: #F4CF24;
+    }
+    .dialog-content {
+      height: 247px;
+      padding: 70px 52px 0 52px;
+      position: relative;
+      .dialog-text {
+        color: #333;
+        font-size: 16px;
+        font-family: "PingFangSC-Medium";
+        line-height: 24px;
+        text-align: center;
+        margin-bottom: 56px;
+      }
+      .dialog-upload {
+        display: flex;
+        height: 45px;
+        justify-content: center;
+        .upload-btn {
+          width: 140px;
+          height: 40px;
+          color: #fff;
+          border-radius: 2px;
+          text-align: center;
+          line-height: 40px;
+          background: -webkit-linear-gradient(left,#FBCF00, #FB9F00);
+        }
+      }
+      .close {
+        position: absolute;
+        width: 19px;
+        height: 19px;
+        top: 14px;
+        right: 36rpx;
+      }
+    }
+  }
+  .circle-0 {
+    position: absolute;
+    top: 750rpx;
+    left: 50%;
+    transform: translate(-50%, 0);
+    width: 50px;
+    height: 50px;
+    z-index: 999;
+    border-radius: 50%;
+    box-sizing: border-box;
+    border: 2.5px solid #F2EEDA;
+  }
+  .circleProgress_wrapper {
+    position: absolute;
+    top: 750rpx;
+    left: 50%;
+    transform: translate(-50%, 0);
+    width: 50px;
+    height: 50px;
+    z-index: 9999;
+    .icon-send {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+  }
+  .wrapper {
+    width: 25px;
+    height: 50px;
+    position: absolute;
+    top:0;
+    overflow: hidden;
+  }
+  .right {
+    width: 26;
+    right:0;
+  }
+  .left {
+    left:0;
+  }
+  .circleProgress {
+    width: 44px;
+    height: 44px;
+    border:3px solid transparent;
+    border-radius: 50%;
+    position: absolute;
+    top:0;
+    transform: rotate(-135deg);
+  }
+  .rightcircle {
+    border-top:3px solid #FBBD00;
+    border-right:3px solid #FBBD00;
+    right:0;
+  }
+  .animation-right {
+    animation: circleProgressLoad_right 0.3s linear ;
+    animation-fill-mode: forwards;
+  }
+  .leftcircle {
+    border-bottom:3px solid #FBBD00;
+    border-left:3px solid #FBBD00;
+    left:0;
+  }
+  .animation-left {
+    animation: circleProgressLoad_left 0.3s linear;
+    animation-fill-mode: forwards;
+  }
+  .showAnimation {
+    animation: showout 1s linear;
+  }
+  @keyframes showout {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  @keyframes circleProgressLoad_right{
+    0%{
+      transform: rotate(-135deg);
+    }
+    50%,100%{
+      transform: rotate(45deg);
+    }
+  }
+  @keyframes circleProgressLoad_left{
+    0%,50%{
+      transform: rotate(-135deg);
+    }
+    100%{
+      transform: rotate(45deg);
+    }
+  }
 }
+
 </style>

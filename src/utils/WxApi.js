@@ -7,8 +7,15 @@ class BaseWxApi {
         let res = await new Promise(async (resolve, reject) => {
             let token = wx.getStorageSync('token');
             let authorization = '';
+            let url = params.url;
             if(token) {
-                authorization += 'BEARER ' + token;
+              authorization += 'BEARER ' + token;
+              console.log()
+              if(params.url && params.url.indexOf('?') != -1){
+                url += '&token='+token;
+              }else{
+                url += '?token='+token;
+              }
             }
             let header = {
                 'authorization': authorization
@@ -20,7 +27,7 @@ class BaseWxApi {
                 }
             }
             wx.request({
-                url: this.baseUrl + params.url,
+                url: this.baseUrl + url,
                 method: params.method,
                 header: header,
                 data: params.data,
@@ -36,7 +43,7 @@ class BaseWxApi {
                     resolve(err);
                 }
             })
-        }) 
+        })
         // setTimeout(async () => {
         //     wx.hideLoading();
         // }, 500)
@@ -50,13 +57,13 @@ class BaseWxApi {
                     resolve(res);
                 }
             })
-        }) 
+        })
         return res;
     }
     async setClipboardData(str) {
         let res = await new Promise((resolve, reject) => {
             wx.setClipboardData({
-                data: str, 
+                data: str,
                 success: function(res) {
                     resolve(res);
                 },
@@ -92,7 +99,7 @@ class BaseWxApi {
                     resolve(res);
                 }
             })
-        }) 
+        })
         return res;
     }
     async getSystemInfo() {
@@ -102,7 +109,7 @@ class BaseWxApi {
                     resolve(res);
                 }
             })
-        }) 
+        })
         return res;
     }
     async authorize(scope) {
@@ -116,7 +123,7 @@ class BaseWxApi {
                     resolve(err);
                 }
             })
-        }) 
+        })
         return res;
     }
     async getUserInfo() {
