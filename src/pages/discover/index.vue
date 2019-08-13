@@ -232,6 +232,7 @@ export default {
         // 滑动结束，触发判断
         // 简单判断滑动宽度超出100像素时触发滑出
         if (Math.abs(this.poswidth) >= 60 || Math.abs(this.posheight) >= 60) {
+          this.innerAudioContext.stop();
           // 最终位移简单设定为x轴200像素的偏移
           let ratio = Math.abs(this.posheight / this.poswidth)
           this.poswidth = this.poswidth >= 0 ? this.poswidth + 200 : this.poswidth - 200

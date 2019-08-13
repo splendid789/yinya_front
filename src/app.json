@@ -1,10 +1,10 @@
 {
-    "pages": [
-        "pages/index/main",
-        "pages/request/main",
-        "pages/exchange/main",
-      "pages/uploadact/main",
-      "pages/record/main",
+  "pages": [
+    "pages/index/main",
+    "pages/request/main",
+    "pages/exchange/main",
+    "pages/uploadact/main",
+    "pages/record/main",
     "pages/discover/main",
     "pages/message/main",
     "pages/mine/main"
@@ -27,13 +27,13 @@
             "selectedIconPath": "/assets/images/icon-message-active.png",
             "iconPath": "/assets/images/icon-message.png",
             "text": "消息"
-        }, 
+        },
         {
             "pagePath": "pages/discover/main",
             "selectedIconPath": "/assets/images/icon-discover-active.png",
             "iconPath": "/assets/images/icon-discover.png",
             "text": "发现"
-        }, 
+        },
         {
             "pagePath": "pages/mine/main",
             "selectedIconPath": "/assets/images/icon-mine-active.png",

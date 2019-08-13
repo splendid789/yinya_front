@@ -30,7 +30,7 @@
     </div>
     <div class="center-line"></div>
     <div class="tip-text">互感兴趣可加好友（备注音吖）</div>
-    <div v-if="rootPage != 'message'" class="exchange-ok" @click="exchangeOk">完成</div>
+    <div v-if="rootPage != 'message'" class="exchange-ok" @click="exchangeOk">{{!goHome?'回到首页':'完成'}}</div>
     <i-toast id="toast" />
 </div>
 </template>
@@ -43,6 +43,7 @@ const { $Toast } = require('../../../static/iview/base/index');
 export default {
     data() {
         return {
+            goHome:false,
             messageArr: [],
             exChangeConfig: {},
             playStatus1: 0,  // 0/1 开始播放/录制结束,
@@ -53,48 +54,36 @@ export default {
             currentTime2: 0, // 当前录音时间
             palyRecordTimer: null, // 播放录音定时器,
             rootPage: '',
-            audioCacheArr: [], 
+            audioCacheArr: [],
             audioArr: [],
             applyID: '',
 
         }
     },
     async onShow() {
+        this.goHome = false;
         this.rootPage = this.$root.$mp.query.root;
         this.applyID = this.$root.$mp.query.applyID;
-        if(this.rootPage === 'message') {
-            if(!!this.applyID) {
-                let config = {
-                    url: 'exchange',
-                    method: 'get',
-                    data: {
-                        status: 1,
-                        id: this.applyID
-                    }
-                }
-                let temp = await wxApi.request(config);
-                this.exChangeConfig = temp.results.results[0];
-            }
-            else {
-                this.exChangeConfig = JSON.parse(wx.getStorageSync('exChangedConfig'));
-            }
+        if(this.rootPage === 'message'||this.rootPage === 'request') {
+          this.goHome = false;
         }
         else {
-            if(!!this.applyID) {
-                let config = {
-                    url: 'exchange',
-                    method: 'get',
-                    data: {
-                        status: 1,
-                        id: this.applyID
-                    }
-                }
-                let temp = await wxApi.request(config);
-                this.exChangeConfig = temp.results.results[0];
+          this.goHome = true;
+        }
+        if(this.applyID) {
+          let config = {
+            url: 'exchange',
+            method: 'get',
+            data: {
+              status: 1,
+              id: this.applyID
             }
-            else {
-                this.exChangeConfig = JSON.parse(wx.getStorageSync('exChangeConfig'));
-            }
+          }
+          let temp = await wxApi.request(config);
+          this.exChangeConfig = temp.results.results[0];
+        }
+        else {
+          this.exChangeConfig = JSON.parse(wx.getStorageSync('exChangeConfig'));
         }
         this.audioArr = [];
         this.audioCacheArr = [];
@@ -114,12 +103,16 @@ export default {
     methods: {
         ...mapMutations(['setUserInfoAuth', 'setUserInfo']),
         exchangeOk() {
-            wx.switchTab({url: '/pages/message/main'});
+            if(this.goHome){
+              wx.switchTab({url: '/pages/discover/main'});
+            }else{
+              wx.switchTab({url: '/pages/message/main'});
+            }
         },
         async downloadAudio(url) {
             let downloadInfo = await wxApi.downloadFile(url);
             if(downloadInfo.statusCode == 200) {
-                return downloadInfo;                
+                return downloadInfo;
             }
             else {
             }
@@ -180,7 +173,7 @@ export default {
         },
         pauseAudio(flag) {
             clearInterval(this.palyRecordTimer)
-            
+
             if(flag == 0) {
                 this.playStatus1 = 0;
             }
@@ -226,7 +219,7 @@ export default {
 </script>
 
 <style lang="less">
-@import "../../assets/style/base.less"; 
+@import "../../assets/style/base.less";
 .exchange-page {
     position: relative;
     padding-top: 86px;
@@ -286,7 +279,7 @@ export default {
                     text-align: center;
                     font-size: 12px;
                     font-family: "PingFangSC-Regular";
-                }   
+                }
             }
         }
     }

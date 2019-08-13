@@ -1,15 +1,17 @@
 <template>
-<div class="request-page">
-    <div class="photo-container">
-        <div 
-            class="photo-item photo-item1"
-        >
+<div class="request-page" v-if="isShow">
+    <div class="header" :style="'height:'+headerHeight+'px;'">
+      <img @click.stop="home" :src="'../../assets/images/left-index.png'" alt="" class="icon-index">
+      <div class="title">音吖</div>
+    </div>
+    <div class="photo-container" :style="'top:'+(headerHeight+54)+'px;'">
+        <div class="photo-item photo-item1">
             <div class="top-border"></div>
             <div class="card-content">
                 <img :src="requestInfo.applicant.head_img" class="user-avatar" alt="">
                 <div class="user-nickname">{{requestInfo.applicant.nickname}}</div>
                 <div class="audio-operator" @click="audioOperator">
-                    <img :src="'../../assets/images/' + (playStatus == 0 ? 'icon-play.png': 'icon-pause.png') " alt="">
+                    <img :src="'../../assets/images/' + (!playFlag ? 'icon-play.png': 'icon-pause.png') " alt="">
                 </div>
             </div>
         </div>
@@ -46,154 +48,152 @@ const wxApi = new WxApi();
 const { $Toast } = require('../../../static/iview/base/index');
 export default {
     data() {
-        return {
-            imgArr:[],
-            clientWidth: wx.getSystemInfoSync().windowWidth,
-            clientHeight: wx.getSystemInfoSync().windowHeight,
-            duration: 0,
-            photoArr: [
-                
-            ],
-            playStatus: 0,  // 0/1 开始播放/录制结束,
-            innerAudioContext: null, // 播放音频实例
-            audioConfig: {
-                path: '',
-                duration: ''
-            }, // 录音配置
-            currentTime: 0, // 当前录音时间
-            palyRecordTimer: null, // 播放录音定时器
-            isUploadFile: false,
-            requestInfo: {},
-            applyID: '',
-            // isExchangePic: false,
-            // isSendComple: false,
-            // isStartSend: false,
-        }
+      return {
+        headerHeight:0,
+        isShow:false,
+        requestInfo: {},
+        applyID: '',
+        innerAudioContext: null, // 播放音频实例
+        playFlag: false,
+        imgArr:[],
+        clientWidth: wx.getSystemInfoSync().windowWidth,
+        clientHeight: wx.getSystemInfoSync().windowHeight,
+        duration: 0,
+        photoArr: [
+
+        ],
+        audioConfig: {
+            path: '',
+            duration: ''
+        }, // 录音配置
+        currentTime: 0, // 当前录音时间
+        palyRecordTimer: null, // 播放录音定时器
+        isUploadFile: false,
+        // isExchangePic: false,
+        // isSendComple: false,
+        // isStartSend: false,
+      }
     },
     computed: {
         ...mapGetters(['userInfo']),
     },
+    onLoad(){
+      mpvue.getSystemInfo({
+        success: res => {
+          console.log(res)
+          //导航高度
+          this.headerHeight = res.statusBarHeight + 46;
+        }, fail(err) {
+          console.log(err);
+        }
+      })
+    },
     async onShow() {
+        this.isShow = false;
+        this.playFlag = false;
         this.applyID = this.$root.$mp.query.applyID;
-        // this.applyID = 1418;
-        if(!!this.applyID) {
-            let config = {
-                url: 'exchange',
-                method: 'get',
-                data: {
-                    status: 0,
-                    id: this.applyID
-                }
-            }
-            let temp = await wxApi.request(config);
-            console.log('resInfo: ', temp);
+//        this.applyID = 2586;
+        console.log('applyID:',this.applyID)
+        if(this.applyID) {
+          let config = {
+              url: 'exchange?status=0&id='+this.applyID,
+              method: 'get'
+          }
+          let temp = await wxApi.request(config);
+          console.log('applyInfo: ', JSON.stringify(temp));
+          if(temp.results.results && temp.results.results.length > 0){
             this.requestInfo = temp.results.results[0];
+            this.isShow = true;
+            console.log('http->requestInfo: ', JSON.stringify(this.requestInfo));
+          }else{
+            wx.switchTab({url: '/pages/message/main'});
+          }
         }
         else {
-            this.requestInfo = JSON.parse(wx.getStorageSync('exChangeConfig'));
+          this.requestInfo = JSON.parse(mpvue.getStorageSync('exChangeConfig'));
+          this.isShow = true;
+          console.log('storage->requestInfo: ', JSON.stringify(this.requestInfo));
         }
-        this.audioConfig.duration = this.requestInfo.applicant.duration;
-        let url = this.requestInfo.applicant.file;
-        let info = await this.downloadAudio(url);
-        this.audioConfig.path = info.tempFilePath;
+        this.innerAudioContext = wx.createInnerAudioContext()
+        this.innerAudioContext.src = this.requestInfo.applicant.file;
+        this.listenAudioEvent();
     },
     methods: {
         ...mapMutations(['setUserInfoAuth', 'setUserInfo']),
-        closeDialog() {
-            this.isUploadFile = false;
-        },
-        toUpload() {
-            let url = '/pages/record/main';
-            wx.navigateTo({url});
-        },
-        async downloadAudio(url) {
-            let downloadInfo = await wxApi.downloadFile(url);
-            console.log('downloadInfo: ', downloadInfo);
-            if(downloadInfo.statusCode == 200) {
-                return downloadInfo;                
-            }
-            else {
-                console.log('downloadFile fail !');
-            }
-        },
-        async exchange() {
-            console.log('exchange:');
-            if(!this.applyID) {
-                if(!this.userInfo.file || !this.userInfo.wechat_number) {
-                    this.isUploadFile = true;
-                    return;
-                }
-            }
-            let config = {
-                url: 'exchange/agree_exchange/?exchange_id=' + this.requestInfo.id,
-                method: 'post',
-                data: {
-                    exchange_id: this.requestInfo.id
-                }
-            }
-            let resInfo = await wxApi.request(config);
-            if(resInfo.errno == 0) {
-                if(this.innerAudioContext) {
-                    this.innerAudioContext.stop();
-                    this.innerAudioContext.destroy();
-                    this.innerAudioContext = null;
-                }
-                if(!!this.applyID) {
-                    wx.navigateTo({url: '/pages/exchange/main?applyID=' + this.applyID});
-                }
-                wx.navigateTo({url: '/pages/exchange/main'});
-            }
-            else {
-                console.log('同意交换失败！');
-            }
-        },
-        // 播放/暂停录音
-        audioOperator() {
-            this.playStatus == 0 ? this.playAudio() : this.pauseAudio();
-        },
-        // 播放录音
-        playAudio() {
-            console.log('playAudio')
-            if(!this.innerAudioContext) {
-                this.innerAudioContext = wx.createInnerAudioContext()
-                this.innerAudioContext.src = this.audioConfig.path;
-                this.listenAudioEvent();
-            }
-            this.playStatus++;
-            this.innerAudioContext.play();
-            this.palyRecordTimer = setInterval(() => {
-                this.currentTime++;
-            },1000);
-        },
-        // 暂停录音
-        pauseAudio() {
-            console.log('stopPlayRecord')
-            clearInterval(this.palyRecordTimer)
-            this.playStatus = 0;
-            this.currentTime = 0;
-            this.innerAudioContext.destroy();
-            this.innerAudioContext = null;
-        },
-        // 监听音频事件-回调处理函数
-        listenAudioEvent() {
-            this.innerAudioContext.onPlay((res) => {
-                console.log('开始播放', res)
-            })
-            this.innerAudioContext.onError((res) => {
-                console.log(res.errMsg)
-                console.log(res.errCode)
-            })
-            this.innerAudioContext.onStop((res) => {
-                console.log('停止播放', res);
-            })
-            this.innerAudioContext.onEnded((res) => {
-                console.log('播放结束', res);
-                clearInterval(this.palyRecordTimer)
-                this.playStatus = 0;
-                this.currentTime = 0;
-                this.innerAudioContext.stop();
-            });
-        },
+      home(){
+        let url = '/pages/discover/main';
+        wx.switchTab({url})
+      },
+      closeDialog() {
+          this.isUploadFile = false;
+      },
+      toUpload() {
+          let url = '/pages/record/main';
+          wx.navigateTo({url});
+      },
+      async exchange() {
+          console.log('exchange:');
+          if(!this.applyID) {
+              if(!this.userInfo.file || !this.userInfo.wechat_number) {
+                  this.isUploadFile = true;
+                  return;
+              }
+          }
+          let config = {
+              url: 'exchange/agree_exchange/?exchange_id=' + this.requestInfo.id,
+              method: 'post',
+              data: {
+                  exchange_id: this.requestInfo.id
+              }
+          }
+          let resInfo = await wxApi.request(config);
+          if(resInfo.errno == 0) {
+              if(this.innerAudioContext) {
+                  this.innerAudioContext.stop();
+                  this.innerAudioContext.destroy();
+                  this.innerAudioContext = null;
+              }
+              if(this.applyID) {
+                  wx.redirectTo({url: '/pages/exchange/main?applyID=' + this.applyID+"&root=request'"});
+              }
+          }
+          else {
+              console.log('同意交换失败！');
+          }
+      },
+      // 播放/暂停录音
+      audioOperator() {
+        !this.playFlag ? this.playAudio() : this.pauseAudio();
+      },
+      // 播放录音
+      playAudio() {
+        console.log('playAudio')
+        this.innerAudioContext.play();
+      },
+      // 暂停录音
+      pauseAudio() {
+        console.log('stopPlayRecord')
+        this.innerAudioContext.stop();
+      },
+      // 监听音频事件-回调处理函数
+      listenAudioEvent() {
+          this.innerAudioContext.onPlay((res) => {
+            console.log('开始播放', res)
+            this.playFlag = true;
+          })
+          this.innerAudioContext.onError((res) => {
+            console.log(res.errMsg)
+            console.log(res.errCode)
+          })
+          this.innerAudioContext.onStop((res) => {
+            console.log('停止播放', res);
+            this.playFlag = false;
+          })
+          this.innerAudioContext.onEnded((res) => {
+            console.log('播放结束', res);
+            this.playFlag = false;
+          });
+      },
     },
     onUnload () {
         console.log('request 页面卸载');
@@ -207,7 +207,7 @@ export default {
 </script>
 
 <style lang="less">
-@import "../../assets/style/base.less"; 
+@import "../../assets/style/base.less";
 .request-page {
     position: relative;
     height: 100vh;
@@ -215,9 +215,34 @@ export default {
     font-family: "PingFangSC-Semibold";
     background: -webkit-linear-gradient(top,#fffef8, #fff9e0);
     // background-color: #FFFBE8;
+    .header{
+      position: relative;
+      width: 100%;
+      background-color: #ffffff;
+      .title{
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        height: 46px;
+        line-height: 46px;
+        font-family:PingFang-SC-Medium;
+        font-size:18px;
+        letter-spacing:2px;
+        color:rgba(0,0,0,1);
+        text-align: center;
+      }
+      .icon-index{
+        width: 20px;
+        height: 19px;
+        display: block;
+        position: absolute;
+        left: 20px;
+        bottom: 13px;
+        z-index: 10;
+      }
+    }
     .photo-container {
         position: absolute;
-        top: 54px;
         left: 50%;
         transform: translate(-50%, 0);
         width: 240px;
@@ -306,7 +331,7 @@ export default {
             font-family: "PingFangSC-Medium";
         }
     }
-    
+
     .dialog-container {
         width: 326px;
         height: 254px;
@@ -323,7 +348,7 @@ export default {
             position: relative;
             .dialog-text {
                 color: #333;
-                font-size: 16px;
+                font-size: 18px;
                 font-family: "PingFangSC-Medium";
                 line-height: 24px;
                 text-align: center;
@@ -344,7 +369,7 @@ export default {
                 }
             }
             .close {
-                position: absolute;   
+                position: absolute;
                 width: 19px;
                 height: 19px;
                 top: 14px;
