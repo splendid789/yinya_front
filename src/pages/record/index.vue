@@ -6,7 +6,7 @@
         <div v-if="playStatus > 1" class="tip-text" style="margin-bottom: 65px;">请点击保存</div>
         <div v-else style="margin-bottom: 34px;">
             <div class="tip-text">请录制一段声音</div>
-            <div style="color: #999;font-size: 14px; text-align: center;">有趣的声音将获得更多好友申请</div>
+            <div style="color: #999;font-size: 14px; text-align: center;">声音将展示在首页，被更多的人听到</div>
         </div>
     </block>
     <div v-if="playStatus == 3" :style="'visibility:' + (playStatus > 0 ? ';' : 'hidden;') " class="time-text">{{currentTime}}s</div>
@@ -61,7 +61,7 @@ export default {
         this.rootPage = this.$root.$mp.query.root;
         let authSetting = await wxApi.getSetting();
         if(authSetting.authSetting['scope.record']) {
-            this.userInfoAuth = true; 
+            this.userInfoAuth = true;
         }
         else {
             this.userInfoAuth = false;
@@ -113,24 +113,24 @@ export default {
         async downloadAudio(url) {
             let downloadInfo = await wxApi.downloadFile(url);
             if(downloadInfo.statusCode == 200) {
-                return downloadInfo;                
+                return downloadInfo;
             }
             else {
             }
         },
         async changePlayStatus () {
             switch(this.playStatus) {
-                case 0: 
+                case 0:
                     await this.getRecordAuth();  break;
-                case 1: 
+                case 1:
                     this.stopRecord();  break;
-                case 2: 
+                case 2:
                     this.playRecord();  break;
-                case 3: 
+                case 3:
                     this.stopPlayRecord();  break;
             }
         },
-        
+
         async getRecordAuth() {
             let authInfo = await wxApi.getSetting();
             let flag = authInfo.authSetting['scope.record'];
@@ -199,7 +199,7 @@ export default {
             this.recorderManager.onStart(() => {
                 this.playStatus++;
                 this.recordTime++;
-                
+
                 this.recordTimer = setInterval(() => {
                     if(this.recordTime >= 60) {
                         clearInterval(this.recordTimer);
@@ -262,7 +262,7 @@ export default {
         async saveAudio() {
             let config = {
                 url: 'users/upload_record/',
-                filePath: this.tempFilePath, 
+                filePath: this.tempFilePath,
                 name: 'file',
                 formData: {
                     duration: this.recordTime
@@ -288,9 +288,9 @@ export default {
                     setTimeout(() => {
                         wx.navigateTo({url: '/pages/uploadact/main?root=record'});
                     }, 1000);
-                    
+
                 }
-            } 
+            }
             else {
                 $Toast({
                     content: JSON.parse(uploadInfo.data).results,
@@ -312,7 +312,7 @@ export default {
 </script>
 
 <style lang="less">
-@import "../../assets/style/base.less"; 
+@import "../../assets/style/base.less";
 .record-page {
     padding-top: 100px;
     font-family: "PingFangSC-Medium";
@@ -392,7 +392,7 @@ export default {
             position: absolute;
             right: 18px;
         }
-        .operator-text1, 
+        .operator-text1,
         .operator-text2 {
             width: 44px;
             height: 44px;

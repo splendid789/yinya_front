@@ -1,10 +1,6 @@
 <template>
 <div class="request-page" v-if="isShow">
-    <div class="header" :style="'height:'+headerHeight+'px;'">
-      <div @click.stop="home" class="icon-index"><img :src="'../../assets/images/left-index.png'" alt="" class="icon-image"></div>
-      <div class="title">音吖</div>
-    </div>
-    <div class="photo-container" :style="'top:'+(headerHeight+54)+'px;'">
+    <div class="photo-container">
         <div class="photo-item photo-item1">
             <div class="top-border"></div>
             <div class="card-content">
@@ -49,7 +45,6 @@ const { $Toast } = require('../../../static/iview/base/index');
 export default {
     data() {
       return {
-        headerHeight:0,
         isShow:false,
         requestInfo: {},
         applyID: '',
@@ -77,46 +72,15 @@ export default {
     computed: {
         ...mapGetters(['userInfo']),
     },
-    onLoad(){
-      mpvue.getSystemInfo({
-        success: res => {
-          console.log(res)
-          //导航高度
-          this.headerHeight = res.statusBarHeight + 46;
-        }, fail(err) {
-          console.log(err);
-        }
-      })
-    },
     async onShow() {
-        this.isShow = false;
-        this.playFlag = false;
-        this.applyID = this.$root.$mp.query.applyID;
-//        this.applyID = 2586;
-        console.log('applyID:',this.applyID)
-        if(this.applyID) {
-          let config = {
-              url: 'exchange?status=0&id='+this.applyID,
-              method: 'get'
-          }
-          let temp = await wxApi.request(config);
-          console.log('applyInfo: ', JSON.stringify(temp));
-          if(temp.results.results && temp.results.results.length > 0){
-            this.requestInfo = temp.results.results[0];
-            this.isShow = true;
-            console.log('http->requestInfo: ', JSON.stringify(this.requestInfo));
-          }else{
-            wx.switchTab({url: '/pages/message/main'});
-          }
-        }
-        else {
-          this.requestInfo = JSON.parse(mpvue.getStorageSync('exChangeConfig'));
-          this.isShow = true;
-          console.log('storage->requestInfo: ', JSON.stringify(this.requestInfo));
-        }
-        this.innerAudioContext = wx.createInnerAudioContext();
-        this.innerAudioContext.src = this.requestInfo.applicant.file;
-        this.listenAudioEvent();
+      this.isShow = false;
+      this.playFlag = false;
+      this.requestInfo = JSON.parse(mpvue.getStorageSync('exChangeConfig'));
+      this.isShow = true;
+      console.log('storage->requestInfo: ', JSON.stringify(this.requestInfo));
+      this.innerAudioContext = wx.createInnerAudioContext();
+      this.innerAudioContext.src = this.requestInfo.applicant.file;
+      this.listenAudioEvent();
     },
     methods: {
         ...mapMutations(['setUserInfoAuth', 'setUserInfo']),
@@ -132,34 +96,25 @@ export default {
           wx.navigateTo({url});
       },
       async exchange() {
-          console.log('exchange:');
-          if(!this.applyID) {
-              if(!this.userInfo.file || !this.userInfo.wechat_number) {
-                  this.isUploadFile = true;
-                  return;
-              }
-          }
-          let config = {
-              url: 'exchange/agree_exchange/?exchange_id=' + this.requestInfo.id,
-              method: 'post',
-              data: {
-                  exchange_id: this.requestInfo.id
-              }
-          }
-          let resInfo = await wxApi.request(config);
-          if(resInfo.errno == 0) {
-              if(this.innerAudioContext) {
-                  this.innerAudioContext.stop();
-                  this.innerAudioContext.destroy();
-                  this.innerAudioContext = null;
-              }
-              if(this.applyID) {
-                  wx.redirectTo({url: '/pages/exchange/main?applyID=' + this.applyID+"&root=request"});
-              }
-          }
-          else {
-              console.log('同意交换失败！');
-          }
+        console.log('exchange:',this.applyID);
+        if(!this.userInfo.file || !this.userInfo.wechat_number) {
+          this.isUploadFile = true;
+          return;
+        }
+        let config = {
+            url: 'exchange/agree_exchange/?exchange_id=' + this.requestInfo.id,
+            method: 'post',
+            data: {
+                exchange_id: this.requestInfo.id
+            }
+        }
+        let resInfo = await wxApi.request(config);
+        if(resInfo.errno == 0) {
+          wx.redirectTo({url: '/pages/exchange/main?applyID=' + this.applyID+"&root=mrequest"});
+        }
+        else {
+            console.log('同意交换失败！');
+        }
       },
       // 播放/暂停录音
       audioOperator() {
@@ -197,7 +152,6 @@ export default {
     },
     onUnload () {
         console.log('request 页面卸载');
-        this.innerAudioContext.stop();
         this.innerAudioContext.destroy();
         this.innerAudioContext = null;
     },
@@ -213,40 +167,10 @@ export default {
     font-family: "PingFangSC-Semibold";
     background: -webkit-linear-gradient(top,#fffef8, #fff9e0);
     // background-color: #FFFBE8;
-    .header{
-      position: relative;
-      width: 100%;
-      background-color: #ffffff;
-      .title{
-        position: absolute;
-        bottom: 0;
-        width: 100%;
-        height: 46px;
-        line-height: 46px;
-        font-family:PingFang-SC-Medium;
-        font-size:18px;
-        letter-spacing:2px;
-        color:rgba(0,0,0,1);
-        text-align: center;
-      }
-      .icon-index{
-        width: 30px;
-        height: 30px;
-        position: absolute;
-        left: 10px;
-        bottom: 8px;
-        z-index: 10;
-        .icon-image{
-          width: 20px;
-          height: 20px;
-          display: block;
-          margin: 5px;
-        }
-      }
-    }
     .photo-container {
         position: absolute;
         left: 50%;
+        top:54px;
         transform: translate(-50%, 0);
         width: 240px;
         height: 277px;

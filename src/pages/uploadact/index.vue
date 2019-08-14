@@ -1,7 +1,7 @@
 <template>
     <div class="uploadact-page">
-        <div class="tip-text" style="color: #333; margin-bottom: 17px;">完善后即可加Ta微信</div>
-        <div class="tip-text" style="fong-size: 14px; margin-bottom: 30px;">对方与你互感兴趣才可查看微信号</div>
+        <div class="tip-text" style="color: #333; margin-bottom: 17px;">请上传微信号</div>
+        <div class="tip-text" style="fong-size: 14px; margin-bottom: 30px;">互相喜欢对方声音 才可互看微信号</div>
         <div class="input-account">
             <input :value="account" @input="inputAccount" type="text" class="input-act" placeholder="输入微信号">
         </div>
@@ -79,10 +79,10 @@ export default {
                     setTimeout(() => {
                         wx.switchTab({url: '/pages/discover/main'});
                     }, 1000);
-                    
+
                 }
-                
-            } 
+
+            }
             else {
                 $Toast({
                     content: resInfo.results,
@@ -133,7 +133,7 @@ export default {
         line-height: 40px;
         border-radius: 2px;
     }
-}   
+}
 </style>
 
 

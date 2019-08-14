@@ -2,6 +2,7 @@
   "pages": [
     "pages/index/main",
     "pages/request/main",
+    "pages/mrequest/main",
     "pages/exchange/main",
     "pages/uploadact/main",
     "pages/record/main",

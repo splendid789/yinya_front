@@ -28,7 +28,7 @@
             </div>
         </van-tab>
     </van-tabs>
-    
+
     <i-toast id="toast" />
 </div>
 </template>
@@ -100,7 +100,7 @@ export default {
             let config;
             if((/ios/.test(systemInfo.platform))) {
                 let token = wx.getStorageSync('token');
-                let url; 
+                let url;
                 if(value) {
                     url = 'exchange?status=1&token=' + token
                 }
@@ -113,7 +113,7 @@ export default {
                 }
             }
             else {
-                let url; 
+                let url;
                 if(value) {
                     url = 'exchange?status=1'
                 }
@@ -140,15 +140,15 @@ export default {
                 data: {exchange_id: item.id}
             }
             await wxApi.request(config)
-            if(item.status) {
-                wx.setStorageSync('exChangedConfig', JSON.stringify(item));
-                wx.navigateTo({url: '/pages/exchange/main?root=message'});
+            if(item.status === 1) {
+              mpvue.setStorageSync('exChangeConfig', JSON.stringify(item));
+              wx.navigateTo({url: '/pages/exchange/main?root=message'});
             }
             else {
-                wx.setStorageSync('exChangeConfig', JSON.stringify(item));
-                wx.navigateTo({url: '/pages/request/main'});
+              mpvue.setStorageSync('exChangeConfig', JSON.stringify(item));
+              wx.navigateTo({url: '/pages/mrequest/main'});
             }
-            
+
         }
     },
     onTabItemTap() {
@@ -170,7 +170,7 @@ export default {
 </script>
 
 <style lang="less">
-@import "../../assets/style/base.less"; 
+@import "../../assets/style/base.less";
 .message-page {
     box-sizing: border-box;
     background: -webkit-linear-gradient(top,#fffef8, #fff9e0);

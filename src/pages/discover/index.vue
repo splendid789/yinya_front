@@ -3,9 +3,9 @@
   <div class="stack" v-if="friends.length > 0">
     <div class="stack-item hideSlow" v-for="(item, index) in friends" :key="index"
          :style="index === current
-         ? ('transform:translate3D(' + poswidth + 'px' + ',' + posheight + 'px' + ',0px);opacity:'+ opacity +';z-index:10;'+ (animation?'transition-timing-function:linear;transition-duration:650ms;':''))
+         ? ('transform:translate3D(' + poswidth + 'px' + ',' + posheight + 'px' + ',0px);opacity:'+ opacity +';z-index:10;'+ (animation?'transition-timing-function:linear;transition-duration:550ms;':''))
          : (index >= current && index <= (current + visible - 1)
-         ? 'opacity:1;transform:translate3D(0,0,' + (-1 * (index - current) * 60) + 'px' + ');z-index:'+(visible - index + current)+';transition-timing-function:linear;transition-duration:650ms;'
+         ? 'opacity:1;transform:translate3D(0,0,' + (-1 * (index - current) * 60) + 'px' + ');z-index:'+(visible - index + current)+';transition-timing-function:linear;transition-duration:550ms;'
          : 'z-index:-1;transform:translate3D(0,0,' + (-1 * visible * 60) + 'px' + ');')"
          @touchstart="touchStart"
          @touchmove="touchMove"
@@ -58,8 +58,8 @@
       <div class="top-border"></div>
       <div class="dialog-content">
         <div class="dialog-text">
-          <div>Ta已收到你的请求</div>
-          <div>同意后即可互加微信</div>
+          <div>你的声音已发送对方</div>
+          <div>对方同意后可互加微信</div>
         </div>
         <div class="dialog-upload">
           <div @click="closeExchangeOk" class="upload-btn">我知道了</div>
@@ -81,6 +81,7 @@ export default {
         return {
           start: {}, // 记录起始位置
           end: {}, // 记录终点位置
+          isOne:true,
           current: 0, // 默认首图的序列
           opacity: 1, // 记录opacity
           zIndex: 10, // 记录zIndex
@@ -115,12 +116,18 @@ export default {
         obeyMuteSwitch: false
       });
       if(this.friends.length > 0){
-        this.playAudio(this.current);
+        this.friends[this.current].playFlag = false;
+        this.isOne = true;
+//        this.playAudio(this.current);
+//        setTimeout(()=>{
+//          this.innerAudioContext.stop();
+//        },100)
       }
     },
     async onLoad() {
       this.start = {};
       this.end = {};
+      this.isOne = true;
       this.current = 0;
       this.opacity = 1;
       this.zIndex = 10;
@@ -135,7 +142,7 @@ export default {
       this.friends = [];
 
       this.friends = await this.getFriendInfo(10);
-      this.playAudio(this.current);
+      //this.playAudio(this.current);
     },
     onHide() {
       this.innerAudioContext.destroy()
@@ -175,10 +182,15 @@ export default {
       },
       async clickPlay(e){
         let formId = e.mp.detail.formId;
-        if(this.friends[this.current].playFlag){
-          this.innerAudioContext.stop();
+        if(this.isOne){
+          this.playAudio(this.current);
+          this.isOne = false;
         }else{
-          this.innerAudioContext.play();
+          if(this.friends[this.current].playFlag){
+            this.innerAudioContext.stop();
+          }else{
+            this.innerAudioContext.play();
+          }
         }
         await this.collectionFormId(formId);
       },
@@ -233,6 +245,7 @@ export default {
         // 简单判断滑动宽度超出100像素时触发滑出
         if (Math.abs(this.poswidth) >= 60 || Math.abs(this.posheight) >= 60) {
           this.innerAudioContext.stop();
+          this.isOne = false;
           // 最终位移简单设定为x轴200像素的偏移
           let ratio = Math.abs(this.posheight / this.poswidth)
           this.poswidth = this.poswidth >= 0 ? this.poswidth + 200 : this.poswidth - 200
@@ -292,6 +305,7 @@ export default {
           return;
         }
         this.isExchangePic = true;
+        await this.collectionFormId(formId);
         let config = {
           url: 'exchange/',
           method: 'post',
@@ -305,7 +319,6 @@ export default {
             this.isExchangeOk = true;
           }
         }, 800);
-        await this.collectionFormId(formId);
       },
     }
 }

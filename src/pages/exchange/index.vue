@@ -1,36 +1,36 @@
 <template>
 <div class="exchange-page">
-    <div class="user-info">
+    <div class="user-info" v-if="isShow">
         <div class="user-info-left">
-            <img class="avatar" :src="exChangeConfig.respondent.head_img" alt="">
+            <img class="avatar" :src="respondent.head_img" alt="">
             <div class="base-info">
-                <div class="user-nickname">{{exChangeConfig.respondent.nickname}}</div>
-                <div @click="copyWechatNum(exChangeConfig.respondent.wechat_number)" class="user-wechat-account">微信号: {{exChangeConfig.respondent.wechat_number}}</div>
+                <div class="user-nickname">{{respondent.nickname}}</div>
+                <div @click="copyWechatNum(respondent.wechat_number)" class="user-wechat-account">微信号: {{respondent.wechat_number}}</div>
             </div>
             <div class="audio-container" >
-                <div class="audio-widget" @click="audioOperator(1)">
-                    <img :src="'../../assets/images/' + (playStatus2 == 0 ? 'exchange-play.png': 'exchange-pause.png') " alt="" class="icon-audio">
-                    <span >{{playStatus2 == 0 ? exChangeConfig.respondent.duration : currentTime2}}s</span>
+                <div class="audio-widget" @click="audioRespondent()">
+                    <img :src="'../../assets/images/' + (!respondentFlag ? 'exchange-play.png': 'exchange-pause.png') " alt="" class="icon-audio">
+                    <span >{{respondent.duration}}s</span>
                 </div>
             </div>
         </div>
         <div class="user-info-right">
-            <img class="avatar" :src="exChangeConfig.applicant.head_img" alt="">
+            <img class="avatar" :src="applicant.head_img" alt="">
             <div class="base-info">
-                <div class="user-nickname">{{exChangeConfig.applicant.nickname}}</div>
-                <div @click="copyWechatNum(exChangeConfig.applicant.wechat_number)" class="user-wechat-account">微信号: {{exChangeConfig.applicant.wechat_number}}</div>
+                <div class="user-nickname">{{applicant.nickname}}</div>
+                <div @click="copyWechatNum(applicant.wechat_number)" class="user-wechat-account">微信号: {{applicant.wechat_number}}</div>
             </div>
             <div class="audio-container" >
-                <div class="audio-widget" @click="audioOperator(0)">
-                    <img :src="'../../assets/images/' + (playStatus1 == 0 ? 'exchange-play.png': 'exchange-pause.png') " alt="" class="icon-audio">
-                    <span >{{playStatus1 == 0 ? exChangeConfig.applicant.duration : currentTime1}}s</span>
+                <div class="audio-widget" @click="audioApplicant()">
+                    <img :src="'../../assets/images/' + (!applicantFlag ? 'exchange-play.png': 'exchange-pause.png') " alt="" class="icon-audio">
+                    <span >{{applicant.duration}}s</span>
                 </div>
             </div>
         </div>
     </div>
     <div class="center-line"></div>
     <div class="tip-text">互感兴趣可加好友（备注音吖）</div>
-    <div v-if="rootPage != 'message'" class="exchange-ok" @click="exchangeOk">{{!goHome?'回到首页':'完成'}}</div>
+    <div v-if="rootPage != 'message'" class="exchange-ok" @click="exchangeOk">{{btnText}}</div>
     <i-toast id="toast" />
 </div>
 </template>
@@ -42,179 +42,138 @@ const wxApi = new WxApi();
 const { $Toast } = require('../../../static/iview/base/index');
 export default {
     data() {
-        return {
-            goHome:false,
-            messageArr: [],
-            exChangeConfig: {},
-            playStatus1: 0,  // 0/1 开始播放/录制结束,
-            playStatus2: 0,  // 0/1 开始播放/录制结束,
-            innerAudioContext: null, // 播放音频实例
-            audioConfig: {}, // 录音配置
-            currentTime1: 0, // 当前录音时间
-            currentTime2: 0, // 当前录音时间
-            palyRecordTimer: null, // 播放录音定时器,
-            rootPage: '',
-            audioCacheArr: [],
-            audioArr: [],
-            applyID: '',
-
-        }
+      return {
+        isShow:false,
+        goHome:false,
+        btnText:'完成',
+        messageArr: [],
+        exChangeConfig: {},
+        respondent:{},
+        respondentFlag:false,
+        applicant:{},
+        applicantFlag:false,
+        innerAudioContext: null, // 播放音频实例,
+        rootPage: '',
+        applyID: '',
+      }
     },
     async onShow() {
+      this.goHome = false;
+      this.btnText = '完成';
+      this.respondentFlag = false;
+      this.applicantFlag = false;
+      this.rootPage = this.$root.$mp.query.root;
+      this.applyID = this.$root.$mp.query.applyID;
+      console.log("from page:"+this.rootPage)
+      console.log("from applyID:"+this.applyID)
+      if(this.rootPage === 'message'|| this.rootPage === 'mrequest') {
         this.goHome = false;
-        this.rootPage = this.$root.$mp.query.root;
-        this.applyID = this.$root.$mp.query.applyID;
-        if(this.rootPage === 'message'||this.rootPage === 'request') {
-          this.goHome = false;
+      }
+      else {
+        this.goHome = true;
+        if(this.rootPage === 'request'){
+          this.btnText = '完成';
+        }else{
+          this.btnText = '回到首页';
         }
-        else {
-          this.goHome = true;
-        }
-        if(this.applyID) {
-          let config = {
-            url: 'exchange',
-            method: 'get',
-            data: {
-              status: 1,
-              id: this.applyID
-            }
+      }
+      console.log('goHome:',this.goHome)
+      if(this.applyID) {
+        let config = {
+          url: 'exchange',
+          method: 'get',
+          data: {
+            status: 1,
+            id: this.applyID
           }
-          let temp = await wxApi.request(config);
-          this.exChangeConfig = temp.results.results[0];
         }
-        else {
-          this.exChangeConfig = JSON.parse(wx.getStorageSync('exChangeConfig'));
-        }
-        this.audioArr = [];
-        this.audioCacheArr = [];
-        this.audioArr.push(this.exChangeConfig.respondent)
-        this.audioArr.push(this.exChangeConfig.applicant)
-        this.innerAudioContext = null;
-        this.currentTime1 = 0;
-        this.currentTime2 = 0;
-        this.playStatus1 = 0;
-        this.playStatus2 = 0;
-        for(let i = 0; i < 2; i++) {
-            let url = this.audioArr[i].file;
-            let info = await this.downloadAudio(url);
-            this.audioCacheArr.push(info);
-        }
+        let temp = await wxApi.request(config);
+        this.exChangeConfig = temp.results.results[0];
+        this.respondent = this.exChangeConfig.respondent;
+        this.applicant = this.exChangeConfig.applicant;
+        console.log('from request:',JSON.stringify(this.exChangeConfig))
+      }
+      else {
+        this.exChangeConfig = JSON.parse(mpvue.getStorageSync('exChangeConfig'));
+        this.respondent = this.exChangeConfig.respondent;
+        this.applicant = this.exChangeConfig.applicant;
+        console.log('from storage:',JSON.stringify(this.exChangeConfig))
+      }
+      this.isShow = true;
+      this.innerAudioContext = wx.createInnerAudioContext();
     },
     methods: {
-        ...mapMutations(['setUserInfoAuth', 'setUserInfo']),
-        exchangeOk() {
-            if(this.goHome){
-              wx.switchTab({url: '/pages/discover/main'});
-            }else{
-              wx.switchTab({url: '/pages/message/main'});
-            }
-        },
-        async downloadAudio(url) {
-            let downloadInfo = await wxApi.downloadFile(url);
-            if(downloadInfo.statusCode == 200) {
-                return downloadInfo;
-            }
-            else {
-            }
-        },
-        audioOperator(flag) {
-            if(flag == 0) {
-                this.audioConfig.path = this.audioCacheArr[1].tempFilePath;
-                this.audioConfig.duration = this.audioArr[1].duration;
-            }
-            else {
-                this.audioConfig.path = this.audioCacheArr[0].tempFilePath;
-                this.audioConfig.duration = this.audioArr[0].duration;
-            }
-            if(flag == 0) {
-                this.playStatus1 == 0 ? this.playAudio(0) : this.pauseAudio(0);
-            }
-            else {
-                this.playStatus2 == 0 ? this.playAudio(1) : this.pauseAudio(1);
-            }
-        },
-        async copyWechatNum(chatNum) {
-            let info = await wxApi.setClipboardData(chatNum);
-        },
-        async playAudio(flag) {
-            if(!this.innerAudioContext) {
-                this.innerAudioContext = wx.createInnerAudioContext()
-                this.innerAudioContext.src = this.audioConfig.path;
-                this.listenAudioEvent();
-            }
-            else {
-                this.innerAudioContext.stop();
-                this.innerAudioContext.destroy();
-                this.innerAudioContext = wx.createInnerAudioContext()
-                this.innerAudioContext.src = this.audioConfig.path;
-                this.listenAudioEvent();
-            }
-            if(flag == 0) {
-                clearInterval(this.palyRecordTimer)
-                this.playStatus2 = 0;
-                this.currentTime2 = 0;
-                this.playStatus1++;
-            }
-            else {
-                clearInterval(this.palyRecordTimer)
-                this.playStatus1 = 0;
-                this.currentTime1 = 0;
-                this.playStatus2++;
-            }
-            this.innerAudioContext.play();
-            this.palyRecordTimer = setInterval(() => {
-                if(flag == 0) {
-                    this.currentTime1++;
-                }
-                else {
-                    this.currentTime2++;
-                }
-            },1000);
-        },
-        pauseAudio(flag) {
-            clearInterval(this.palyRecordTimer)
-
-            if(flag == 0) {
-                this.playStatus1 = 0;
-            }
-            else {
-                this.playStatus2 = 0;
-            }
-            if(flag == 0) {
-                this.currentTime1 = 0;
-            }
-            else {
-                this.currentTime2 = 0;
-            }
-            this.innerAudioContext.destroy();
-            this.innerAudioContext = null;
-        },
-        listenAudioEvent() {
-            this.innerAudioContext.onPlay((res) => {
-            })
-            this.innerAudioContext.onError((res) => {
-            })
-            this.innerAudioContext.onStop((res) => {
-            })
-            this.innerAudioContext.onEnded((res) => {
-                clearInterval(this.palyRecordTimer)
-                this.playStatus1 = 0;
-                this.playStatus2 = 0;
-                this.currentTime1 = 0;
-                this.currentTime2 = 0;
-                this.innerAudioContext.stop();
-            });
-        },
-    },
-    onUnload () {
+      ...mapMutations(['setUserInfoAuth', 'setUserInfo']),
+      exchangeOk() {
+          if(this.goHome){
+            wx.switchTab({url: '/pages/discover/main'});
+          }else{
+            wx.switchTab({url: '/pages/message/main'});
+          }
+      },
+      async copyWechatNum(chatNum) {
+          let info = await wxApi.setClipboardData(chatNum);
+      },
+      // 监听音频事件-回调处理函数
+      listenAudioRespondentEvent() {
+        this.innerAudioContext.onPlay((res) => {
+          console.log('开始播放', res)
+          this.respondentFlag = true;
+          this.applicantFlag = false;
+        })
+        this.innerAudioContext.onError((res) => {
+          console.log(res.errMsg)
+          console.log(res.errCode)
+        })
+        this.innerAudioContext.onStop((res) => {
+          console.log('停止播放', res);
+          this.respondentFlag = false;
+        })
+        this.innerAudioContext.onEnded((res) => {
+          console.log('播放结束', res);
+          this.respondentFlag = false;
+        });
+      },
+      listenAudioApplicantEvent() {
+        this.innerAudioContext.onPlay((res) => {
+          console.log('开始播放', res)
+          this.applicantFlag = true;
+          this.respondentFlag = false;
+        })
+        this.innerAudioContext.onError((res) => {
+          console.log(res.errMsg)
+          console.log(res.errCode)
+        })
+        this.innerAudioContext.onStop((res) => {
+          console.log('停止播放', res);
+          this.applicantFlag = false;
+        })
+        this.innerAudioContext.onEnded((res) => {
+          console.log('播放结束', res);
+          this.applicantFlag = false;
+        });
+      },
+      audioRespondent(){
         this.innerAudioContext.stop();
-        this.innerAudioContext.destroy();
-        this.innerAudioContext = null;
-        this.playStatus1 = 0;
-        this.playStatus2 = 0;
-        this.currentTime1 = 0;
-        this.currentTime2 = 0;
+        this.applicantFlag = false;
+        this.innerAudioContext.src = this.respondent.file;
+        !this.respondentFlag ? this.innerAudioContext.play() : this.innerAudioContext.stop();
+        this.listenAudioRespondentEvent();
+      },
+      audioApplicant(){
+        this.innerAudioContext.stop();
+        this.respondentFlag = false;
+        this.innerAudioContext.src = this.applicant.file;
+        !this.applicantFlag ? this.innerAudioContext.play() : this.innerAudioContext.stop();
+        this.listenAudioApplicantEvent();
+      }
     },
+  onUnload () {
+    console.log('exchange 页面卸载');
+    this.innerAudioContext.stop();
+    this.innerAudioContext.destroy();
+    this.innerAudioContext = null;
+  },
 }
 </script>
 
