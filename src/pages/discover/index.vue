@@ -68,6 +68,7 @@
       </div>
     </div>
   </van-dialog>
+  <i-toast id="toast" />
 </div>
 </template>
 
@@ -104,7 +105,24 @@ export default {
     computed: {
         ...mapGetters(['userInfo', 'isFirst']),
     },
-    onShow() {
+    async onShow() {
+      console.log('userInfo:',this.userInfo)
+      if(!this.userInfo){
+        let token = mpvue.getStorageSync('token');
+        console.log('token',token)
+        if(!token){
+          $Toast({
+            content: '错误码:10000',
+            type: 'error'
+          });
+        }
+        let config = {
+          url: 'users/me/',
+          method: 'get'
+        }
+        let userInfo = await this.ajaxGetUserInfo();
+        this.setUserInfo(userInfo.user);
+      }
       if(this.userInfo.file && this.userInfo.wechat_number) {
         this.isUploadFile = false;
       }
@@ -149,6 +167,23 @@ export default {
     },
     methods: {
       ...mapMutations(['setUserInfoAuth', 'setUserInfo', 'setInnerAudioContext', 'setIsFirst']),
+      async ajaxGetUserInfo() {
+        let config = {
+          url: 'users/me/',
+          method: 'get'
+        }
+        let res = await wxApi.request(config);
+        if(res.errno == 0) {
+          return res.results;
+        }
+        else {
+          $Toast({
+            content: '错误码:10001',
+            type: 'error'
+          })
+          return;
+        }
+      },
       closeDialog() {
         this.isUploadFile = false;
       },
