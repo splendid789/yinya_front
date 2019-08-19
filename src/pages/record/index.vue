@@ -6,7 +6,7 @@
         <div v-if="playStatus > 1" class="tip-text" style="margin-bottom: 65px;">请点击保存</div>
         <div v-else style="margin-bottom: 34px;">
             <div class="tip-text">请录制一段声音</div>
-            <div style="color: #999;font-size: 14px; text-align: center;">声音将展示在首页，被更多的人听到</div>
+            <div style="color: #999;font-size: 14px; text-align: center;">声音用于向对方发送申请，也会在首页展示 </div>
         </div>
     </block>
     <div v-if="playStatus == 3" :style="'visibility:' + (playStatus > 0 ? ';' : 'hidden;') " class="time-text">{{currentTime}}s</div>
@@ -150,14 +150,11 @@ export default {
         },
         startRecrod() {
             const options = {
-                duration: 10000,
-                sampleRate: 48000,
-                numberOfChannels: 2,
-                encodeBitRate: 192000,
-                format: 'aac',
-                frameSize: 50
+              format: 'mp3',
+              sampleRate: 48000,
+              encodeBitRate: 64000
             }
-            this.recorderManager.start();
+            this.recorderManager.start(options);
         },
         stopRecord(isLeavePage = false) {
             clearInterval(this.recordTimer);

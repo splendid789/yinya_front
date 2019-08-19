@@ -22,10 +22,9 @@
       </div>
     </div>
   </div>
-  <div v-if="!isExchangePic" :class="{'exchange-pic': true}">
-    <form report-submit @submit="exchange">
-      <button class="btn-exchange" form-type="submit">加Ta微信
-      </button>
+  <div v-if="!isExchangePic">
+    <form report-submit @submit="exchange" class="exchange-pic">
+      <button class="btn-exchange" form-type="submit">加Ta微信</button>
     </form>
   </div>
   <div v-if="isExchangePic" :class="{'exchange-pic': true, 'showAnimation': isExchangePic}" style="color: #F4CF24; font-size: 16px;">已通知对方</div>
@@ -62,7 +61,7 @@
           <div>对方同意后可互加微信</div>
         </div>
         <div class="dialog-upload">
-          <div @click="closeExchangeOk" class="upload-btn">我知道了</div>
+          <div @click="closeExchangeOk" class="upload-btn">不再提示</div>
         </div>
         <img style="display: none;" @click="closeDialog" src="../../assets/images/icon-close.png" alt="" class="close">
       </div>
@@ -165,8 +164,20 @@ export default {
     onHide() {
       this.innerAudioContext.destroy()
     },
+    onShareAppMessage: function(res) {
+      if(res.form === 'button') return {};
+      return {
+        title: '互相喜欢对方声音\r\n互加微信成为好友',
+        path: '/pages/discover/main',
+        imageUrl: '/assets/images/share.jpg',
+        success: function(res) {}
+      }
+    },
     methods: {
       ...mapMutations(['setUserInfoAuth', 'setUserInfo', 'setInnerAudioContext', 'setIsFirst']),
+      aaa(e){
+          console.log(e)
+      },
       async ajaxGetUserInfo() {
         let config = {
           url: 'users/me/',

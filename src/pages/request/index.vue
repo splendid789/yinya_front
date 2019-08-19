@@ -115,6 +115,9 @@ export default {
           console.log('storage->requestInfo: ', JSON.stringify(this.requestInfo));
         }
         this.innerAudioContext = wx.createInnerAudioContext();
+        wx.setInnerAudioOption({
+          obeyMuteSwitch: false
+        });
         this.innerAudioContext.src = this.requestInfo.applicant.file;
         this.listenAudioEvent();
     },

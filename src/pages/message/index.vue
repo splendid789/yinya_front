@@ -75,6 +75,15 @@ export default {
         await this.getMessage(0);
         await this.getMessage(1);
     },
+    onShareAppMessage: function(res) {
+      if(res.form === 'button') return {};
+      return {
+        title: '互相喜欢对方声音\r\n互加微信成为好友',
+        path: '/pages/discover/main',
+        imageUrl: '/assets/images/share.jpg',
+        success: function(res) {}
+      }
+    },
     methods: {
         ...mapMutations(['setUserInfoAuth', 'setUserInfo', 'setInnerAudioContext']),
         async selectTab(e) {

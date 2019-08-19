@@ -29,7 +29,7 @@ import {mapGetters, mapMutations} from 'vuex';
 export default {
     data() {
         return {
-            
+
         }
     },
     computed: {
@@ -41,6 +41,15 @@ export default {
             this.innerAudioContext.destroy();
             this.setInnerAudioContext(null);
         }
+    },
+    onShareAppMessage: function(res) {
+      if(res.form === 'button') return {};
+      return {
+        title: '互相喜欢对方声音\r\n互加微信成为好友',
+        path: '/pages/discover/main',
+        imageUrl: '/assets/images/share.jpg',
+        success: function(res) {}
+      }
     },
     methods: {
         ...mapMutations(['setInnerAudioContext']),
@@ -57,7 +66,7 @@ export default {
 </script>
 
 <style lang="less">
-@import "../../assets/style/base.less"; 
+@import "../../assets/style/base.less";
 .mine-page {
     padding: 23px 12px;
     height: 100vh;
