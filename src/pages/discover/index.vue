@@ -168,7 +168,7 @@ export default {
       if(res.form === 'button') return {};
       return {
         title: '互相喜欢对方声音\r\n互加微信成为好友',
-        path: '/pages/discover/main',
+        path: '/pages/index/main',
         imageUrl: '/assets/images/share.jpg',
         success: function(res) {}
       }
