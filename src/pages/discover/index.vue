@@ -38,7 +38,8 @@
       <div class="top-border"></div>
       <div class="dialog-content">
         <div class="dialog-text">
-          <div>完善信息后即可加Ta微信</div>
+          <div>完善声音和微信号后</div>
+          <div>即可与对方申请互加微信</div>
         </div>
         <div class="dialog-upload">
           <div @click="toUpload" class="upload-btn">立即完善</div>
@@ -66,6 +67,26 @@
         <img style="display: none;" @click="closeDialog" src="../../assets/images/icon-close.png" alt="" class="close">
       </div>
     </div>
+  </van-dialog>
+  <van-dialog
+    use-slot
+    :show="showMsg"
+    :showConfirmButton="false"
+    :showCancelButton="false"
+  >
+  <div class="dialog-container">
+    <div class="top-border"></div>
+    <div class="dialog-content">
+      <div class="dialog-text">
+        <div>{{message1}}</div>
+        <div>{{message2}}</div>
+      </div>
+      <div class="dialog-upload">
+        <div @click="closeMsg" class="upload-btn">我知道了</div>
+      </div>
+      <!--<img @click="closeMsg" src="../../assets/images/icon-close.png" alt="" class="close">-->
+    </div>
+  </div>
   </van-dialog>
   <i-toast id="toast" />
 </div>
@@ -99,6 +120,9 @@ export default {
           isUploadFile: false,
           isExchangePic: false,
           isExchangeOk: false,
+          showMsg:false,
+          message1:'',
+          message2:''
         }
     },
     computed: {
@@ -175,8 +199,8 @@ export default {
     },
     methods: {
       ...mapMutations(['setUserInfoAuth', 'setUserInfo', 'setInnerAudioContext', 'setIsFirst']),
-      aaa(e){
-          console.log(e)
+      closeMsg(){
+        this.showMsg = false;
       },
       async ajaxGetUserInfo() {
         let config = {
@@ -350,7 +374,6 @@ export default {
           this.isUploadFile = true;
           return;
         }
-        this.isExchangePic = true;
         await this.collectionFormId(formId);
         let config = {
           url: 'exchange/',
@@ -360,11 +383,30 @@ export default {
           }
         }
         let resInfo = await wxApi.request(config);
-        setTimeout(() => {
-          if(this.isFirst) {
-            this.isExchangeOk = true;
-          }
-        }, 800);
+        if(resInfo.errno === 0){
+          this.isExchangePic = true;
+          setTimeout(() => {
+            if(this.isFirst) {
+              this.isExchangeOk = true;
+            }
+          }, 800);
+        }
+        if(resInfo.errno === 407){
+          this.isExchangePic = true;
+          setTimeout(() => {
+            if(this.isFirst) {
+              this.isExchangeOk = true;
+            }
+          }, 800);
+          this.message1 = '一天只能与15人申请互加微信';
+          this.message2 = '今日剩余5个申请机会';
+          this.showMsg = true;
+        }
+        if(resInfo.errno === 408){
+          this.message1 = '申请机会已用完';
+          this.message2 = '明日0点更新';
+          this.showMsg = true;
+        }
       },
     }
 }

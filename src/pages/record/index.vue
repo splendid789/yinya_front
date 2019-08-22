@@ -17,7 +17,7 @@
     <div v-if="!stopRecord">
       <div style="margin-bottom: 34px;">
         <div class="tip-text">请录制一段声音</div>
-        <div style="color: #999;font-size: 14px; text-align: center;">声音将展示在首页，被更多的人听到</div>
+        <div style="color: #999;font-size: 14px; text-align: center;">声音用于向对方发送申请，也会在首页展示</div>
       </div>
       <div :style="'visibility:' + (startRecord ? ';' : 'hidden;') " class="time-text">{{recordTime}}s</div>
       <form class="operator-container" report-submit @submit="recordManger">
@@ -82,13 +82,30 @@ export default {
         this.init();
     },
     onHide() {
-        if(this.innerAudioContext) {
-          this.innerAudioContext.destroy();
-          this.innerAudioContext = null;
-        }
-        if(this.recorderManager) {
-          this.recorderManager.stop();
-        }
+      if(this.innerAudioContext) {
+        this.innerAudioContext.destroy();
+        this.innerAudioContext = null;
+      }
+      if(this.recorderManager) {
+        this.recorderManager.stop();
+        this.recorderManager = null;
+      }
+      clearInterval(this.timer);
+      this.timer = null;
+      this.init();
+    },
+    onUnload() {
+      if(this.innerAudioContext) {
+        this.innerAudioContext.destroy();
+        this.innerAudioContext = null;
+      }
+      if(this.recorderManager) {
+        this.recorderManager.stop();
+        this.recorderManager = null;
+      }
+      clearInterval(this.timer);
+      this.timer = null;
+      this.init();
     },
     methods: {
       ...mapMutations(['setUserInfo', 'setInnerAudioContext', 'setRecorderManager']),
@@ -157,9 +174,9 @@ export default {
       playManger(e){
         let formId = e.mp.detail.formId;
         if(!this.playRecord){
-          this.innerAudioContext.stop();
           this.innerAudioContext.play();
           this.timer = setInterval(()=>{
+            console.log('-----------')
             this.playTime += 1;
           },1000);
         }else{
@@ -200,13 +217,21 @@ export default {
           let result = clearInterval(this.timer);
           this.timer = null;
           this.playRecord = false;
-          this.playTime = this.user.duration;
+          if(this.hasFile){
+            this.playTime = this.user.duration;
+          }else{
+            this.playTime = this.recordTime;
+          }
         });
         this.innerAudioContext.onStop((res) => {
           clearInterval(this.timer);
           this.timer = null;
           this.playRecord = false;
-          this.playTime = this.user.duration;
+          if(this.hasFile){
+            this.playTime = this.user.duration;
+          }else{
+            this.playTime = this.recordTime;
+          }
         });
       },
       listenRecordEvent() {
@@ -223,7 +248,7 @@ export default {
           this.tempFilePath = tempFilePath;
           this.playTime = Math.ceil(res.duration/1000);
           this.initPlay(this.tempFilePath);
-          this.recordTime = 0;
+          this.recordTime = this.playTime;
           this.stopRecord = true;
           this.startRecord = false;
         })
