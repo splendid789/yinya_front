@@ -1,6 +1,7 @@
 <template>
 <div class="record-page">
-  <div v-if="hasFile">
+  <v-lyrics @collectionFormId="collectionFormId" v-if="!hasFile"></v-lyrics>
+  <div v-if="hasFile" class="has-file-wrap">
     <div class="tip-text" style="margin-bottom: 55px;">当前声音</div>
     <div class="time-text">{{playTime}}s</div>
     <form class="operator-container" report-submit @submit="playManger">
@@ -15,11 +16,11 @@
   </div>
   <div v-else>
     <div v-if="!stopRecord">
-      <div style="margin-bottom: 34px;">
+      <div style="margin-bottom: 52rpx;" v-if="!recordTime">
         <div class="tip-text">请录制一段声音</div>
         <div style="color: #999;font-size: 14px; text-align: center;">声音用于向对方发送申请，也会在首页展示</div>
       </div>
-      <div :style="'visibility:' + (startRecord ? ';' : 'hidden;') " class="time-text">{{recordTime}}s</div>
+      <div :style="'visibility:' + (startRecord ? ';' : 'hidden;') " class="time-text" v-if="recordTime">{{recordTime}}s</div>
       <form class="operator-container" report-submit @submit="recordManger">
         <button :class="{'circle-btn': true, 'pause': playRecord}" form-type="submit">
           <span v-if="!startRecord">开始录制</span>
@@ -28,8 +29,8 @@
       </form>
     </div>
     <div v-else>
-      <div class="tip-text" style="margin-bottom: 65px;">请点击保存</div>
-      <div :style="'visibility:' + (true ? ';' : 'hidden;') " class="time-text">{{playTime}}s</div>
+      <div class="tip-text">请点击保存</div>
+      <div :style="'visibility:' + (true ? ';' : 'hidden;') " class="time-text time-text-2">{{playTime}}s</div>
       <form class="operator-container" report-submit @submit="playManger">
         <img @click="reRecord" class="operator-text1" src="../../assets/images/icon-rerecord.png" alt="">
         <button :class="{'circle-btn': true, 'pause': startRecord}" form-type="submit">
@@ -47,9 +48,14 @@
 <script>
 import WxApi from '../../utils/WxApi'
 import {mapMutations, mapGetters} from 'vuex';
+import vLyrics from '../../components/record/lyrics';
+
 const wxApi = new WxApi();
 const { $Toast } = require('../../../static/iview/base/index');
 export default {
+    components: {
+      vLyrics,
+    },
     data() {
         return {
           rootPage:'mine',
@@ -308,7 +314,7 @@ export default {
 <style lang="less">
 @import "../../assets/style/base.less";
 .record-page {
-    padding-top: 100px;
+    padding-top: 38px;
     font-family: "PingFangSC-Medium";
     color: #333;
     font-size: 16px;
@@ -316,6 +322,9 @@ export default {
     box-sizing: border-box;
     // background-color: #fff;
     background: -webkit-linear-gradient(top,#fffef8, #fff9e0);
+    .has-file-wrap {
+      padding-top: 18px;
+    }
     .textarea {
         box-sizing: border-box;
         width: 100%;
@@ -327,8 +336,9 @@ export default {
         background-color: #FAFAFA;
     }
     .tip-text {
-        margin-bottom: 17px;
+        margin-bottom: 13px;
         text-align: center;
+        margin-top: 44px;
     }
     .time-text {
         height: 30px;
@@ -337,13 +347,16 @@ export default {
         font-size: 30px;
         color: #666;
         margin-bottom: 17px;
+        margin-top: 67px;
+    }
+    .time-text-2 {
+      margin-top: 9px;
     }
     .operator-container {
         position: relative;
         display: flex;
         height: 127px;
         justify-content: center;
-        margin-bottom: 40px;
         align-items: center;
         .operator-text1 {
             position: absolute;
