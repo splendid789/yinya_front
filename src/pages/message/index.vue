@@ -2,30 +2,44 @@
 <div class="message-page" :style="'height: ' + clientHeight + 'px;'">
     <van-tabs type="card" @change="selectTab" nav-class="nav-class" tab-active-class="tabs-active"  tab-class="tabs-class">
         <van-tab class="top-tab" custom-class="tab-class" title="收到请求">
+          <div v-if="messageArr1.length > 0">
             <div @click="findExchange(item)" v-for="(item, index) in messageArr1" :key="index" class="message-item">
                 <div class="top-border"></div>
                 <div class="item-content">
-                    <div class="user-info">
-                        <img class="avatar"  :src="item.applicant.head_img" alt="">
-                        <span class="user-name">{{item.applicant.nickname}}</span>
-                    </div>
-                    <span v-if="!item.is_see" style="color: #EE8B21;" class="exchange-text">请求互加</span>
-                    <span v-else  class="exchange-text">已读</span>
+                  <div class="user-info">
+                    <img class="avatar"  :src="item.applicant.head_img" alt="">
+                    <span class="user-name">{{item.applicant.nickname}}</span>
+                  </div>
+                  <span v-if="!item.is_see" style="color: #EE8B21;" class="exchange-text">请求互加</span>
+                  <span v-else  class="exchange-text">已读</span>
                 </div>
             </div>
+          </div>
+          <div v-else>
+            <div class="nomssage-text">申请加你微信的人会在这里出现</div>
+            <img class="nomessage-img" src="../../assets/images/receive-no-msg.png" style="width: 208px;"/>
+            <div class="nomessage-msg">暂无新消息</div>
+          </div>
         </van-tab>
         <van-tab class="top-tab" custom-class="tab-class" title="互加成功">
+          <div v-if="messageArr2.length > 0">
             <div @click="findExchange(item)" v-for="(item, index) in messageArr2" :key="index" class="message-item">
-                <div class="top-border"></div>
-                <div class="item-content">
-                    <div class="user-info">
-                        <img class="avatar" :src="item.friend_info.head_img" alt="">
-                        <span class="user-name">{{item.friend_info.nickname}}</span>
-                    </div>
-                    <span v-if="!item.is_see" style="color: #EE8B21;" class="exchange-text">未读</span>
-                    <span v-else  class="exchange-text">已读</span>
+              <div class="top-border"></div>
+              <div class="item-content">
+                <div class="user-info">
+                  <img class="avatar" :src="item.friend_info.head_img" alt="">
+                  <span class="user-name">{{item.friend_info.nickname}}</span>
                 </div>
+                <span v-if="!item.is_see" style="color: #EE8B21;" class="exchange-text">未读</span>
+                <span v-else  class="exchange-text">已读</span>
+              </div>
             </div>
+          </div>
+          <div v-else>
+            <div class="nomssage-text">同意互加微信的人会在这里出现</div>
+            <img class="nomessage-img" src="../../assets/images/success-no-msg.png"/>
+            <div class="nomessage-msg">暂无新消息</div>
+          </div>
         </van-tab>
     </van-tabs>
 
@@ -196,6 +210,28 @@ export default {
     }
     .tab-class {
         padding-top: 24px;
+    }
+    .nomssage-text{
+      font-size:14px;
+      font-family:PingFang SC;
+      font-weight:500;
+      color: #EE8B21;
+      text-align: center;
+      margin-top: 85px;
+    }
+    .nomessage-img{
+      display: block;
+      width: 176px;
+      height: 83px;
+      margin: 64px auto 0;
+    }
+    .nomessage-msg{
+      font-size:12px;
+      font-family:PingFang SC;
+      font-weight:400;
+      color: #666666;
+      text-align: center;
+      margin-top: 20px;
     }
     .message-item {
         border-radius: 5px;
