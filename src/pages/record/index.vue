@@ -16,11 +16,11 @@
   </div>
   <div v-else>
     <div v-if="!stopRecord">
-      <div style="margin-bottom: 52rpx;" v-if="!recordTime">
+      <div style="margin-bottom: 52rpx;" v-if="!startRecord">
         <div class="tip-text">请录制一段声音</div>
         <div style="color: #999;font-size: 14px; text-align: center;line-height: 14px;">声音用于向对方发送申请，也会在首页展示</div>
       </div>
-      <div :style="'visibility:' + (startRecord ? ';' : 'hidden;') " class="time-text" v-if="recordTime">{{recordTime}}s</div>
+      <div :style="'visibility:' + (startRecord ? ';' : 'hidden;') " class="time-text" v-if="startRecord">{{recordTime}}s</div>
       <form class="operator-container" report-submit @submit="recordManger">
         <button :class="{'circle-btn': true, 'pause': playRecord}" form-type="submit">
           <span v-if="!startRecord">开始录制</span>
