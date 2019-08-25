@@ -58,6 +58,7 @@
     <scroll-view v-if="searchResults.length" class="results-wrap" scroll-y>
       <div class="result-item" v-for="r in searchResults" :key="r.id" @click="onSongClick(r)">{{r.song}}</div>
     </scroll-view>
+    <i-toast id="toast" />
   </div>
 </template>
 
@@ -130,6 +131,12 @@ export default {
       await wxApi.hideLoading();
       if(res.errno == 0) {
         this.searchResults = res.results || []
+        if (!res.results.length) {
+          $Toast({
+            content: `暂未收录\n请等待更新`,
+            type: 'error'
+          })
+        }
       }
       else {
         $Toast({
