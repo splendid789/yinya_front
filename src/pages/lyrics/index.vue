@@ -84,6 +84,11 @@ export default {
       this.getFistRandomData();
     }, 800);
   },
+  onLoad() {
+    setTimeout(() => {
+      wx.setStorageSync('inLyrics', true);
+    }, 500);
+  },
   onUnload() {
     this.onCancel();
   },

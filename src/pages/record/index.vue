@@ -156,7 +156,7 @@ export default {
         if (inLyrics) {
           setTimeout(() => {
             wx.setStorageSync('inLyrics', false);
-          }, 500);
+          }, 80);
         }
 
         this.user = userInfo.user;
