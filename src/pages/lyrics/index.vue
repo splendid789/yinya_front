@@ -3,105 +3,210 @@
     <!-- 搜索输入框 -->
     <div class="search-wrap">
       <div class="search-input-wrap">
-        <input class="search-input" placeholder="搜索歌曲/歌手" placeholder-class="search-placeholder"/>
-        <div class="search-icon-wrap">
+        <input
+          class="search-input"
+          placeholder="搜索歌曲/歌手"
+          placeholder-class="search-placeholder"
+          :value="keywords"
+          confirm-type="search"
+          @confirm="onSearch"
+          @input="onInput"/>
+        <div class="search-icon-wrap" @click="onSearch">
           <img class="search-icon" src="../../assets/images/lyrics/search.png"/>
         </div>
       </div>
-      <div class="search-cancel">取消</div>
+      <div class="search-cancel" @click="onCancel">取消</div>
     </div>
 
     <!-- 推荐歌手 -->
-    <div class="recommend-wrap" v-if="!keywords">
+    <div class="recommend-wrap" v-if="!searchResults.length">
       <div class="recommend-header">
         <div class="recommend-title">歌手</div>
-        <div class="btn-change">
+        <div class="btn-change" @click="getRandomSingers">
           <img class="icon-refresh" src="../../assets/images/record/refresh.png"/>
           <div>换一批</div>
         </div>
       </div>
       <div class="tag-wrap">
-        <div class="tag" v-for="r in recommendSingers" :key="r.name">{{r.name}}</div>
+        <div
+          class="tag"
+          :key="r.singer_id"
+          v-for="r in recommendSingers"
+          @click="onSingerClick(r)">{{r.singer_name}}</div>
       </div>
     </div>
 
     <!-- 推荐歌曲 -->
-    <div class="recommend-wrap" v-if="!keywords">
+    <div class="recommend-wrap" v-if="!searchResults.length">
       <div class="recommend-header">
         <div class="recommend-title">歌曲</div>
-        <div class="btn-change">
+        <div class="btn-change" @click="getRandomLyrics">
           <img class="icon-refresh" src="../../assets/images/record/refresh.png"/>
           <div>换一批</div>
         </div>
       </div>
       <div class="tag-wrap">
-        <div class="tag" v-for="r in recommendSongs" :key="r.name">{{r.name}}</div>
+        <div
+          class="tag"
+          :key="r.id"
+          v-for="r in recommendSongs"
+          @click="onSongClick(r)">{{r.song}}</div>
       </div>
     </div>
 
     <!-- 搜索结果 -->
-    <scroll-view v-if="keywords" class="results-wrap" scroll-y>
-      <div class="result-item" v-for="r in searchResults">{{r.name}}</div>
+    <scroll-view v-if="searchResults.length" class="results-wrap" scroll-y>
+      <div class="result-item" v-for="r in searchResults" :key="r.id" @click="onSongClick(r)">{{r.song}}</div>
     </scroll-view>
   </div>
 </template>
 
 <script>
+import WxApi from '../../utils/WxApi'
+const wxApi = new WxApi();
+const { $Toast } = require('../../../static/iview/base/index');
+
 export default {
   data() {
     return {
-      recommendSingers: [
-        { name: '周杰伦' },
-        { name: '凤凰传奇' },
-        { name: '凤凰传奇' },
-        { name: '周杰伦' },
-        { name: '凤凰传奇' },
-        { name: '凤凰传奇' },
-        { name: '周杰伦' },
-        { name: '凤凰传奇' },
-        { name: '凤凰传奇' },
-      ],
-      recommendSongs: [
-        { name: '失眠飞行' },
-        { name: '给我一首歌的时间' },
-        { name: '我愿意' },
-        { name: '孤单' },
-        { name: '每一天' },
-        { name: '你是我内心的一首歌' },
-        { name: '爱的双重魔力' },
-      ],
-      searchResults: [
-        { name: '失眠飞行' },
-        { name: '给我一首歌的时间' },
-        { name: '我愿意' },
-        { name: '孤单' },
-        { name: '每一天' },
-        { name: '你是我内心的一首歌' },
-        { name: '爱的双重魔力' },
-        { name: '失眠飞行' },
-        { name: '给我一首歌的时间' },
-        { name: '我愿意' },
-        { name: '孤单' },
-        { name: '每一天' },
-        { name: '你是我内心的一首歌' },
-        { name: '爱的双重魔力' },
-        { name: '失眠飞行' },
-        { name: '给我一首歌的时间' },
-        { name: '我愿意' },
-        { name: '孤单' },
-        { name: '每一天' },
-        { name: '你是我内心的一首歌' },
-        { name: '爱的双重魔力' },
-        { name: '失眠飞行' },
-        { name: '给我一首歌的时间' },
-        { name: '我愿意' },
-        { name: '孤单' },
-        { name: '每一天' },
-        { name: '你是我内心的一首歌' },
-        { name: '爱的双重魔力' },
-      ],
-      keywords: 'w',
+      recommendSingers: [],
+      recommendSongs: [],
+      searchResults: [],
+      keywords: '',
     }
+  },
+  created() {
+    setTimeout(() => {
+      this.getFistRandomData();
+    }, 800);
+  },
+  onUnload() {
+    this.onCancel();
+  },
+  methods: {
+    /*
+     * 搜索输入
+     */
+    onInput(e) {
+      this.keywords = e.mp.detail.value || '';
+    },
+
+    /*
+     * 点击歌手标签
+     */
+    onSingerClick(singer) {
+      this.keywords = singer.singer_name;
+      this.onSearch();
+    },
+
+    /*
+     * 点击歌曲标签
+     */
+    onSongClick(song) {
+      wx.setStorageSync('song', song);
+      wx.setStorageSync('newSong', true);
+      wx.navigateBack();
+    },
+
+    /*
+     * 清空搜索
+     */
+    onCancel() {
+      this.keywords = '';
+      this.searchResults = [];
+    },
+
+    /*
+     * 搜索
+     */
+    async onSearch() {
+      if (!this.keywords) return this.onCancel()
+      let config = {
+        url: `https://lrc.miaohudong.com/api/lrc/search_song/?kw=${this.keywords}`,
+        method: 'get'
+      }
+      await wxApi.showLoading({ title: '加载中', mask: true });
+      let res = await wxApi.request(config);
+      await wxApi.hideLoading();
+      if(res.errno == 0) {
+        this.searchResults = res.results || []
+      }
+      else {
+        $Toast({
+          content: `错误码:${res.errno}`,
+          type: 'error'
+        })
+      }
+    },
+
+    async getFistRandomData() {
+      let configSinger = {
+        url: 'https://lrc.miaohudong.com/api/lrc/popular_singer?num=9',
+        method: 'get'
+      }
+      let configLyrics = {
+        url: 'https://lrc.miaohudong.com/api/lrc/popular_lrc?num=7',
+        method: 'get'
+      }
+      await wxApi.showLoading({ title: '加载中', mask: true });
+      let resSinger = await wxApi.request(configSinger);
+      let resLyrics = await wxApi.request(configLyrics);
+      await wxApi.hideLoading();
+      if(resSinger.errno == 0 && resLyrics.errno === 0) {
+        this.recommendSingers = resSinger.results || []
+        this.recommendSongs = resLyrics.results || []
+      }
+      else {
+        $Toast({
+          content: `错误码:${resSinger.errno || resLyrics.errno}`,
+          type: 'error'
+        })
+      }
+    },
+
+    /*
+     * 随机加载歌手
+     */
+    async getRandomSingers() {
+      let config = {
+        url: 'https://lrc.miaohudong.com/api/lrc/popular_singer?num=9',
+        method: 'get'
+      }
+      await wxApi.showLoading({ title: '加载中', mask: true });
+      let res = await wxApi.request(config);
+      await wxApi.hideLoading();
+      if(res.errno == 0) {
+        this.recommendSingers = res.results || []
+      }
+      else {
+        $Toast({
+          content: `错误码:${res.errno}`,
+          type: 'error'
+        })
+      }
+    },
+
+    /*
+     * 随机加载歌曲
+     */
+    async getRandomLyrics() {
+      let config = {
+        url: 'https://lrc.miaohudong.com/api/lrc/popular_lrc?num=7',
+        method: 'get'
+      }
+      await wxApi.showLoading({ title: '加载中', mask: true });
+      let res = await wxApi.request(config);
+      await wxApi.hideLoading();
+      if(res.errno == 0) {
+        this.recommendSongs = res.results || []
+      }
+      else {
+        $Toast({
+          content: `错误码:${res.errno}`,
+          type: 'error'
+        })
+      }
+    },
   }
 }
 </script>

@@ -143,9 +143,14 @@ export default {
       },
       async init() {
         let userInfo = await this.getUserInfo();
+
+        // 选中特定歌词后newSong会变更为true
+        const newSong = wx.getStorageSync('newSong');
+        wx.setStorageSync('newSong', false);
+
         this.user = userInfo.user;
         this.setUserInfo(userInfo.user);
-        if(this.user && this.user.file){
+        if(this.user && this.user.file && !newSong){
           this.playRecord = false;
           this.playTime = this.user.duration;
           this.initPlay(this.user.file);

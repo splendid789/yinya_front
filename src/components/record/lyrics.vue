@@ -65,8 +65,17 @@ export default {
      * 随机加载歌词
      */
     async getRandomLyrics() {
+      const song = wx.getStorageSync('song');
+      if (song) {
+        if (/^《/.test(song.climax[0])){
+          song.climax.shift();
+        }
+        this.lyrics = song;
+        wx.setStorageSync('song', '');
+        return;
+      }
       let config = {
-        url: 'http://lrc.miaohudong.com/api/lrc/popular_lrc?num=1',
+        url: 'https://lrc.miaohudong.com/api/lrc/popular_lrc?num=1',
         method: 'get'
       }
       await wxApi.showLoading({ title: '加载中', mask: true });
