@@ -2,7 +2,7 @@
   <div class="record-lyrics-wrap">
     <!-- 歌词内容 -->
     <div class="title">《{{lyrics.song}}》</div>
-    <scroll-view class="scroll-view" scroll-y>
+    <scroll-view class="scroll-view" scroll-y :scroll-top="scrollTop">
       <div class="content" v-for="c in lyrics.climax" :key="c">{{c}}</div>
     </scroll-view>
 
@@ -34,9 +34,18 @@ const { $Toast } = require('../../../static/iview/base/index');
 
 export default {
   name: 'v-lyrics',
+  props: {
+    lyricsRefresh: { type: Number, default: -1 },
+  },
+  watch: {
+    lyricsRefresh() {
+      this.getRandomLyrics();
+    }
+  },
   data() {
     return {
       lyrics: {},
+      scrollTop: 0,
     }
   },
   created() {
@@ -78,10 +87,11 @@ export default {
         url: 'https://lrc.miaohudong.com/api/lrc/popular_lrc?num=1',
         method: 'get'
       }
-      await wxApi.showLoading({ title: '加载中', mask: true });
+      // await wxApi.showLoading({ title: '加载中', mask: true });
       let res = await wxApi.request(config);
-      await wxApi.hideLoading();
+      // await wxApi.hideLoading();
       if(res.errno == 0) {
+        this.scrollTop = this.scrollTop === 0 ? -1 : 0;
         const lyrics = res.results && res.results[0] || []
         if (/^《/.test(lyrics.climax[0])){
           lyrics.climax.shift();

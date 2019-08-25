@@ -5,10 +5,12 @@
       <div class="search-input-wrap">
         <input
           class="search-input"
-          placeholder="搜索歌曲/歌手"
+          :placeholder="isFocus ? '' : '搜索歌曲/歌手'"
           placeholder-class="search-placeholder"
           :value="keywords"
           confirm-type="search"
+          @focus="onFocus"
+          @blur="onBlur"
           @confirm="onSearch"
           @input="onInput"/>
         <div class="search-icon-wrap" @click="onSearch">
@@ -74,6 +76,7 @@ export default {
       recommendSongs: [],
       searchResults: [],
       keywords: '',
+      isFocus: false,
     }
   },
   created() {
@@ -85,6 +88,12 @@ export default {
     this.onCancel();
   },
   methods: {
+    onFocus() {
+      this.isFocus = true;
+    },
+    onBlur() {
+      this.isFocus = false;
+    },
     /*
      * 搜索输入
      */
@@ -152,13 +161,13 @@ export default {
         method: 'get'
       }
       let configLyrics = {
-        url: 'https://lrc.miaohudong.com/api/lrc/popular_lrc?num=7',
+        url: 'https://lrc.miaohudong.com/api/lrc/popular_lrc?num=10',
         method: 'get'
       }
-      await wxApi.showLoading({ title: '加载中', mask: true });
+      // await wxApi.showLoading({ title: '加载中', mask: true });
       let resSinger = await wxApi.request(configSinger);
       let resLyrics = await wxApi.request(configLyrics);
-      await wxApi.hideLoading();
+      // await wxApi.hideLoading();
       if(resSinger.errno == 0 && resLyrics.errno === 0) {
         this.recommendSingers = resSinger.results || []
         this.recommendSongs = resLyrics.results || []
@@ -179,9 +188,9 @@ export default {
         url: 'https://lrc.miaohudong.com/api/lrc/popular_singer?num=9',
         method: 'get'
       }
-      await wxApi.showLoading({ title: '加载中', mask: true });
+      // await wxApi.showLoading({ title: '加载中', mask: true });
       let res = await wxApi.request(config);
-      await wxApi.hideLoading();
+      // await wxApi.hideLoading();
       if(res.errno == 0) {
         this.recommendSingers = res.results || []
       }
@@ -198,12 +207,12 @@ export default {
      */
     async getRandomLyrics() {
       let config = {
-        url: 'https://lrc.miaohudong.com/api/lrc/popular_lrc?num=7',
+        url: 'https://lrc.miaohudong.com/api/lrc/popular_lrc?num=10',
         method: 'get'
       }
-      await wxApi.showLoading({ title: '加载中', mask: true });
+      // await wxApi.showLoading({ title: '加载中', mask: true });
       let res = await wxApi.request(config);
-      await wxApi.hideLoading();
+      // await wxApi.hideLoading();
       if(res.errno == 0) {
         this.recommendSongs = res.results || []
       }

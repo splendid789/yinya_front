@@ -1,6 +1,6 @@
 <template>
 <div class="record-page" v-if="isPageLoaded">
-  <v-lyrics @collectionFormId="collectionFormId" v-if="!hasFile"></v-lyrics>
+  <v-lyrics @collectionFormId="collectionFormId" v-if="!hasFile" :lyricsRefresh="lyricsRefresh"></v-lyrics>
   <div v-if="hasFile" class="has-file-wrap">
     <div class="tip-text" style="margin-bottom: 55px;">当前声音</div>
     <div class="time-text">{{playTime}}s</div>
@@ -71,7 +71,8 @@ export default {
           recorderManager: null, // 录音管理器实例
           innerAudioContext: null, // 播放音频实例
           tempFilePath: '',// 录音资源临时文件路径
-          timer:null
+          timer:null,
+          lyricsRefresh: 0,
         }
     },
     computed: {
@@ -147,6 +148,7 @@ export default {
         // 选中特定歌词后newSong会变更为true
         const newSong = wx.getStorageSync('newSong');
         wx.setStorageSync('newSong', false);
+        if (newSong) this.lyricsRefresh++;
 
         this.user = userInfo.user;
         this.setUserInfo(userInfo.user);
