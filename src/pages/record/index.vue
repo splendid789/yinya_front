@@ -1,5 +1,5 @@
 <template>
-<div class="record-page">
+<div class="record-page" v-if="isPageLoaded">
   <v-lyrics @collectionFormId="collectionFormId" v-if="!hasFile"></v-lyrics>
   <div v-if="hasFile" class="has-file-wrap">
     <div class="tip-text" style="margin-bottom: 55px;">当前声音</div>
@@ -58,6 +58,7 @@ export default {
     },
     data() {
         return {
+          isPageLoaded: false,
           rootPage:'mine',
           hasFile:false,
           recordAuth:false,
@@ -155,6 +156,7 @@ export default {
           this.stopRecord = false;
           this.hasFile = false;
         }
+        this.isPageLoaded = true;
       },
       initPlay(src){
         if(!this.innerAudioContext){

@@ -8,7 +8,8 @@
     "pages/record/main",
     "pages/discover/main",
     "pages/message/main",
-    "pages/mine/main"
+    "pages/mine/main",
+    "pages/lyrics/main"
   ],
   "window": {
     "backgroundTextStyle": "dark",
