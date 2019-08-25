@@ -1,9 +1,9 @@
 <template>
   <div class="record-lyrics-wrap">
     <!-- 歌词内容 -->
-    <div class="title">《{{lyrics.title}}》</div>
+    <div class="title">《{{lyrics.song}}》</div>
     <scroll-view class="scroll-view" scroll-y>
-      <div class="content" v-for="c in lyrics.content">{{c}}</div>
+      <div class="content" v-for="c in lyrics.climax" :key="c">{{c}}</div>
     </scroll-view>
 
     <div class="btn-wrap">
@@ -28,39 +28,63 @@
 </template>
 
 <script>
+import WxApi from '../../utils/WxApi'
+const wxApi = new WxApi();
+const { $Toast } = require('../../../static/iview/base/index');
+
 export default {
   name: 'v-lyrics',
   data() {
     return {
-      lyrics: {
-        title: '七里香',
-        content: [
-          '窗外的麻雀在电线杆上多嘴',
-          '窗外的麻雀在电线杆上多嘴',
-          '窗外的麻雀在电线杆上多嘴',
-          '窗外的麻雀在电线杆上多嘴',
-          '窗外的麻雀在电线杆上多嘴',
-          '窗外的麻雀在电线杆上多嘴',
-          '窗外的麻雀在电线杆上多嘴',
-          '窗外的麻雀在电线杆上多嘴',
-          '窗外的麻雀在电线杆上多嘴',
-          '窗外的麻雀在电线杆上多嘴',
-          '窗外的麻雀在电线杆上多嘴',
-          '窗外的麻雀在电线杆上多嘴',
-          '窗外的麻雀在电线杆上多嘴',
-          '窗外的麻雀在电线杆上多嘴',
-        ]
-      },
+      lyrics: {},
     }
   },
+  created() {
+    this.getRandomLyrics();
+  },
   methods: {
+    /*
+     * 点击换一首
+     */
     onChange(e) {
       let formId = e.mp.detail.formId;
       this.$emit('collectionFormId', formId);
+      this.getRandomLyrics();
     },
+
+    /*
+     * 点击更多
+     */
     onMore(e) {
       let formId = e.mp.detail.formId;
       this.$emit('collectionFormId', formId);
+      wx.navigateTo({ url: '/pages/lyrics/main' });
+    },
+
+    /*
+     * 随机加载歌词
+     */
+    async getRandomLyrics() {
+      let config = {
+        url: 'http://lrc.miaohudong.com/api/lrc/popular_lrc?num=1',
+        method: 'get'
+      }
+      await wxApi.showLoading({ title: '加载中', mask: true });
+      let res = await wxApi.request(config);
+      await wxApi.hideLoading();
+      if(res.errno == 0) {
+        const lyrics = res.results && res.results[0] || []
+        if (/^《/.test(lyrics.climax[0])){
+          lyrics.climax.shift();
+        }
+        this.lyrics = lyrics
+      }
+      else {
+        $Toast({
+          content: `错误码:${res.errno}`,
+          type: 'error'
+        })
+      }
     },
   }
 }

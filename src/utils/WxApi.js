@@ -28,7 +28,7 @@ class BaseWxApi {
             }
             console.log('request url is:',url)
             wx.request({
-                url: this.baseUrl + url,
+                url: /^http/.test(url) ? url : this.baseUrl + url,
                 method: params.method,
                 header: header,
                 data: params.data,
