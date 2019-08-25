@@ -18,7 +18,7 @@
     <div v-if="!stopRecord">
       <div style="margin-bottom: 52rpx;" v-if="!recordTime">
         <div class="tip-text">请录制一段声音</div>
-        <div style="color: #999;font-size: 14px; text-align: center;">声音用于向对方发送申请，也会在首页展示</div>
+        <div style="color: #999;font-size: 14px; text-align: center;line-height: 14px;">声音用于向对方发送申请，也会在首页展示</div>
       </div>
       <div :style="'visibility:' + (startRecord ? ';' : 'hidden;') " class="time-text" v-if="recordTime">{{recordTime}}s</div>
       <form class="operator-container" report-submit @submit="recordManger">
@@ -145,23 +145,32 @@ export default {
       async init() {
         let userInfo = await this.getUserInfo();
 
-        // 选中特定歌词后newSong会变更为true
+        // 前往更多歌曲页选中特定歌曲后newSong会变更为true
+        // 当newSong为true时，直接替换掉当前页面的歌曲
         const newSong = wx.getStorageSync('newSong');
         wx.setStorageSync('newSong', false);
         if (newSong) this.lyricsRefresh++;
 
+        // 被逼无奈，在跳转更多歌曲页时inLyrics会设为true
+        const inLyrics = wx.getStorageSync('inLyrics');
+        if (inLyrics) {
+          setTimeout(() => {
+            wx.setStorageSync('inLyrics', false);
+          }, 500);
+        }
+
         this.user = userInfo.user;
         this.setUserInfo(userInfo.user);
-        if(this.user && this.user.file && !newSong){
+        if(this.user && this.user.file){
           this.playRecord = false;
           this.playTime = this.user.duration;
           this.initPlay(this.user.file);
-          this.hasFile = true;
-        }else{
+          if (!inLyrics && !newSong) this.hasFile = true;
+        } else{
           this.startRecord = false;
           this.recordTime = 0;
           this.stopRecord = false;
-          this.hasFile = false;
+          if (!inLyrics && !newSong) this.hasFile = false;
         }
         this.isPageLoaded = true;
       },
@@ -348,6 +357,8 @@ export default {
         margin-bottom: 13px;
         text-align: center;
         margin-top: 44px;
+        line-height: 14px;
+        font-size: 14px;
     }
     .time-text {
         height: 30px;
@@ -355,11 +366,13 @@ export default {
         text-align: center;
         font-size: 30px;
         color: #666;
-        margin-bottom: 17px;
+        margin-bottom: 14px;
         margin-top: 67px;
+        line-height: 30px;
     }
     .time-text-2 {
       margin-top: 9px;
+      margin-top: -4px;
     }
     .operator-container {
         position: relative;
@@ -369,7 +382,7 @@ export default {
         align-items: center;
         .operator-text1 {
             position: absolute;
-            left: 18px;
+            left: 43px;
             top: 40px;
         }
         .circle-btn {
@@ -406,7 +419,7 @@ export default {
         }
         .operator-text2 {
             position: absolute;
-            right: 18px;
+            right: 43px;
             top: 40px;
         }
         .operator-text1,

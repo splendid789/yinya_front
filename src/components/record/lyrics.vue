@@ -67,6 +67,7 @@ export default {
     onMore(e) {
       let formId = e.mp.detail.formId;
       this.$emit('collectionFormId', formId);
+      wx.setStorageSync('inLyrics', true);
       wx.navigateTo({ url: '/pages/lyrics/main' });
     },
 
