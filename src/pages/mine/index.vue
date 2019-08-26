@@ -1,9 +1,10 @@
 <template>
 <div class="mine-page">
+    <img :src="userInfo.head_img" alt="" class="avatar">
+    <span class="user-name">{{userInfo.nickname}}</span>
+
     <!-- 未上传语音状态 -->
     <div class="upload-tip-wrap" v-if="!userInfo.file">
-        <img :src="userInfo.head_img" alt="" class="avatar"/>
-        <div class="user-name">{{userInfo.nickname}}</div>
         <div class="split"></div>
         <div class="tip-title">尚未完善个人信息</div>
         <div class="tip-desc">完善后即可与对方申请互加微信</div>
@@ -11,10 +12,6 @@
     </div>
 
     <!-- 已上传语音状态 -->
-    <div class="user-info" v-if="userInfo.file">
-        <img :src="userInfo.head_img" alt="" class="avatar">
-        <span class="user-name">{{userInfo.nickname}}</span>
-    </div>
     <div class="item-container" v-if="userInfo.file">
         <div class="mine-account item" @click="openMyVoice">
             <div class="left">
@@ -82,42 +79,45 @@ export default {
 <style lang="less">
 @import "../../assets/style/base.less";
 .mine-page {
-    padding: 23px 12px;
+    padding: 30px 12px;
     height: 100vh;
     box-sizing: border-box;
     font-family: "PingFangSC-Semibold";
     color: #999;
     font-size: 15px;
     background: -webkit-linear-gradient(top,#fffef8, #fff9e0);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    .avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+    }
+    .user-name {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333333;
+        margin-top: 12px;
+        line-height: 18px;
+    }
     /* 未上传提示 */
     .upload-tip-wrap {
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding-top: 7px;
-        .avatar {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-        }
-        .user-name {
-            font-size: 18px;
-            font-weight: bold;
-            color: #333333;
-            margin-top: 12px;
-            line-height: 18px;
-        }
         .split {
             width: 343px;
             height: 1px;
             background: #ea6f39;
             margin-top: 22px;
+            opacity: 0.3;
         }
         .tip-title {
             font-size: 14px;
             font-weight: bold;
             color: #333333;
-            margin-top: 22px;
+            margin-top: 33px;
             line-height: 14px;
         }
         .tip-desc {
@@ -128,37 +128,21 @@ export default {
             line-height: 12px;
         }
         .upload-btn {
-            margin-top: 24px;
+            margin-top: 33px;
             background: linear-gradient(90deg,rgba(251,207,0,1),rgba(251,159,0,1));
             box-shadow: 0px 0px 3px 0px rgba(216,204,189,1);
             border-radius: 2px;
             color: #ffffff;
-            font-size: 16px;
+            font-size: 18px;
             line-height: 40px;
             width: 140px;
             text-align: center;
         }
     }
-    .user-info {
-        padding-left: 8px;
-        width: 100%;
-        height: 84px;
-        display: flex;
-        align-items: center;
-        margin-bottom: 44px;
-        .avatar {
-            width: 82px;
-            height: 82px;
-            margin-right: 37px;
-            border-radius: 50%;
-        }
-        .user-name {
-            color: #333333;
-            font-size: 18px;
-        }
-    }
+    /* 已上传展示内容 */
     .item-container {
-        // width: 100%;
+        width: 100%;
+        margin-top: 35px;
         // padding: 0 16px;
         .item {
             background: -webkit-linear-gradient(left,#FBCF00, #FB9F00);

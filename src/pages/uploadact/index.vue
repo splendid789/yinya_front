@@ -3,7 +3,7 @@
         <div class="tip-text" style="color: #333; margin-bottom: 17px;">请上传微信号</div>
         <div class="tip-text" style="fong-size: 14px; margin-bottom: 30px;">互相喜欢对方声音 才可互看微信号</div>
         <div class="input-account">
-            <input :value="account" @input="inputAccount" type="text" class="input-act" placeholder="输入微信号">
+            <input :value="account" @input="inputAccount" type="text" class="input-act" :placeholder="isFocus ? '' : '输入微信号'" @focus="onFocus" @blur="onBlur">
         </div>
         <div @click="compleUpload" class="comple-btn">完成</div>
         <i-toast id="toast" />
@@ -19,6 +19,7 @@ export default {
         return {
             account: '',
             rootPage: '',
+            isFocus: false,
         }
     },
     computed: {
@@ -34,6 +35,12 @@ export default {
         ...mapMutations(['setUserInfo']),
         inputAccount(e) {
             this.account = e.mp.detail.value;
+        },
+        onFocus() {
+            this.isFocus = true;
+        },
+        onBlur() {
+            this.isFocus = false;
         },
         async compleUpload() {
             if(this.account === '') {
