@@ -199,6 +199,7 @@ export default {
         let formId = e.mp.detail.formId;
         if(!this.playRecord){
           this.innerAudioContext.play();
+          if (this.timer) clearInterval(this.timer);
           this.timer = setInterval(()=>{
             console.log('-----------')
             this.playTime += 1;
@@ -261,6 +262,7 @@ export default {
       listenRecordEvent() {
         this.recorderManager.onStart(() => {
           this.startRecord = true;
+          if (this.timer) clearInterval(this.timer);
           this.timer = setInterval(()=>{
             this.recordTime += 1;
           },1000);
