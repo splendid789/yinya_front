@@ -13,21 +13,33 @@
           @blur="onBlur"
           @confirm="onSearch"
           @input="onInput"/>
-        <div class="search-icon-wrap" @click="onSearch">
-          <img class="search-icon" src="../../assets/images/lyrics/search.png"/>
-        </div>
+        <form report-submit @submit="onSearchClick">
+          <button form-type="submit">
+            <div class="search-icon-wrap">
+              <img class="search-icon" src="../../assets/images/lyrics/search.png"/>
+            </div>
+          </button>
+        </form>
       </div>
-      <div class="search-cancel" @click="onCancel">取消</div>
+      <form report-submit @submit="onCancel">
+        <button form-type="submit">
+          <div class="search-cancel">取消</div>
+        </button>
+      </form>
     </div>
 
     <!-- 推荐歌手 -->
     <div class="recommend-wrap" v-if="!searchResults.length">
       <div class="recommend-header">
         <div class="recommend-title">歌手</div>
-        <div class="btn-change" @click="getRandomSingers">
-          <img class="icon-refresh" src="../../assets/images/record/refresh.png"/>
-          <div>换一批</div>
-        </div>
+        <form report-submit @submit="getRandomSingers">
+          <button form-type="submit">
+            <div class="btn-change">
+              <img class="icon-refresh" src="../../assets/images/record/refresh.png"/>
+              <div>换一批</div>
+            </div>
+          </button>
+        </form>
       </div>
       <div class="tag-wrap">
         <div
@@ -42,10 +54,14 @@
     <div class="recommend-wrap" v-if="!searchResults.length">
       <div class="recommend-header">
         <div class="recommend-title">歌曲</div>
-        <div class="btn-change" @click="getRandomLyrics">
-          <img class="icon-refresh" src="../../assets/images/record/refresh.png"/>
-          <div>换一批</div>
-        </div>
+        <form report-submit @submit="getRandomLyrics">
+          <button form-type="submit">
+            <div class="btn-change">
+              <img class="icon-refresh" src="../../assets/images/record/refresh.png"/>
+              <div>换一批</div>
+            </div>
+          </button>
+        </form>
       </div>
       <div class="tag-wrap">
         <div
@@ -99,6 +115,7 @@ export default {
     onBlur() {
       this.isFocus = false;
     },
+
     /*
      * 搜索输入
      */
@@ -115,6 +132,27 @@ export default {
     },
 
     /*
+     * 点击搜索按钮
+     */
+    onSearchClick(e) {
+      const formId = e.mp.detail.formId;
+      this.collectionFormId(formId);
+      this.onSearch();
+    },
+
+    /*
+     * 搜集formId
+     */
+    collectionFormId(formid) {
+      let config = {
+        url: 'exchange/collect_formid/',
+        method: 'post',
+        data: {formid}
+      };
+      wxApi.request(config);
+    },
+
+    /*
      * 点击歌曲标签
      */
     onSongClick(song) {
@@ -126,7 +164,11 @@ export default {
     /*
      * 清空搜索
      */
-    onCancel() {
+    onCancel(e) {
+      if (e) {
+        const formId = e.mp.detail.formId;
+        this.collectionFormId(formId);
+      }
       this.keywords = '';
       this.searchResults = [];
     },
@@ -188,7 +230,11 @@ export default {
     /*
      * 随机加载歌手
      */
-    async getRandomSingers() {
+    async getRandomSingers(e) {
+      if (e) {
+        const formId = e.mp.detail.formId;
+        this.collectionFormId(formId);
+      }
       let config = {
         url: 'https://lrc.miaohudong.com/api/lrc/popular_singer?num=9',
         method: 'get'
@@ -210,7 +256,11 @@ export default {
     /*
      * 随机加载歌曲
      */
-    async getRandomLyrics() {
+    async getRandomLyrics(e) {
+      if (e) {
+        const formId = e.mp.detail.formId;
+        this.collectionFormId(formId);
+      }
       let config = {
         url: 'https://lrc.miaohudong.com/api/lrc/popular_lrc?num=10',
         method: 'get'
@@ -233,6 +283,15 @@ export default {
 </script>
 
 <style lang="less">
+button {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+button:after {
+  outline: none;
+  border: none;
+}
 .page-lyrics {
   width: 100%;
   min-height: 100vh;
