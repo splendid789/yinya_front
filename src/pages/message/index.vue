@@ -2,7 +2,7 @@
 <div class="message-page" :style="'height: ' + clientHeight + 'px;'">
     <van-tabs type="card" @change="selectTab" nav-class="nav-class" tab-active-class="tabs-active"  tab-class="tabs-class">
         <van-tab class="top-tab" custom-class="tab-class" title="收到申请">
-          <div v-if="loadSuccess">
+          <div v-if="loadSuccess1">
             <div v-if="messageArr1.length > 0">
               <div @click="findExchange(item)" v-for="(item, index) in messageArr1" :key="index" class="message-item">
                   <div class="top-border"></div>
@@ -24,7 +24,7 @@
           </div>
         </van-tab>
         <van-tab class="top-tab" custom-class="tab-class" title="同意互加">
-          <div v-if="loadSuccess">
+          <div v-if="loadSuccess2">
             <div v-if="messageArr2.length > 0">
               <div @click="findExchange(item)" v-for="(item, index) in messageArr2" :key="index" class="message-item">
                 <div class="top-border"></div>
@@ -64,14 +64,16 @@ export default {
         clientHeight: '',
         flag: 0,
         timer: null,
-        loadSuccess:false,
+        loadSuccess1:false,
+        loadSuccess2:false,
       }
     },
     computed: {
         ...mapGetters(['innerAudioContext'])
     },
     async onShow() {
-        this.loadSuccess = false;
+        this.loadSuccess1 = false;
+        this.loadSuccess2 = false;
         if(this.innerAudioContext) {
             this.innerAudioContext.stop();
             this.innerAudioContext.destroy();
@@ -94,6 +96,10 @@ export default {
         this.messageArr2 = [];
         await this.getMessage(0);
         await this.getMessage(1);
+    },
+    onHide(){
+        this.loadSuccess1 = false;
+        this.loadSuccess2 = false;
     },
     onShareAppMessage: function(res) {
       if(res.form === 'button') return {};
@@ -155,16 +161,24 @@ export default {
                     method: 'get'
                 }
             }
-            let resInfo = await wxApi.request(config);
-            if(value) {
+            await wxApi.request(config).then((resInfo)=>{
+              if(value) {
                 this.messageArr2 = resInfo.results.results;
-            }
-            else {
+                this.loadSuccess2 = true;
+              }
+              else {
                 this.messageArr1 = resInfo.results.results;
-            }
-            setTimeout(()=>{
-                this.loadSuccess = true;
-            },300)
+                this.loadSuccess1 = true;
+              }
+             }).catch(()=>{
+              if(value) {
+                this.loadSuccess2 = true;
+              }
+              else {
+                this.loadSuccess1 = true;
+              }
+            });
+
         },
         async findExchange(item) {
             let config = {

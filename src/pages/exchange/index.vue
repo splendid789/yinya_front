@@ -29,7 +29,8 @@
         </div>
     </div>
     <div class="center-line"></div>
-    <div class="tip-text">互感兴趣可加好友（备注音吖）</div>
+    <div class="tip-text" style="margin-bottom: 5px;">请复制对方微信号，到微信里添加对方好友</div>
+    <div class="tip-text">（添加时备注音吖）</div>
     <div v-if="rootPage != 'message'" class="exchange-ok" @click="exchangeOk">{{btnText}}</div>
     <i-toast id="toast" />
 </div>

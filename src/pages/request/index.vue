@@ -108,6 +108,7 @@ export default {
           }else{
             wx.switchTab({url: '/pages/message/main'});
           }
+          this.findExchange(this.applyID);
         }
         else {
           this.requestInfo = JSON.parse(mpvue.getStorageSync('exChangeConfig'));
@@ -133,6 +134,14 @@ export default {
       toUpload() {
           let url = '/pages/record/main';
           wx.navigateTo({url});
+      },
+      async findExchange(exchangeId) {
+        let config = {
+          url: 'exchange/see_exchange/',
+          method: 'get',
+          data: {exchange_id: exchangeId}
+        }
+        await wxApi.request(config)
       },
       async exchange() {
           console.log('exchange:');
