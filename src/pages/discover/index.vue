@@ -42,9 +42,15 @@
           <div>即可与对方申请互加微信</div>
         </div>
         <div class="dialog-upload">
-          <div @click="toUpload" class="upload-btn">立即完善</div>
+          <form report-submit @submit="toUpload">
+            <button class="upload-btn" form-type="submit">立即完善</button>
+          </form>
         </div>
-        <img @click="closeDialog" src="../../assets/images/icon-close.png" alt="" class="close">
+        <form report-submit @submit="closeDialog">
+          <button class="close-btn" form-type="submit">
+            <img  src="../../assets/images/icon-close.png" alt="" class="close">
+          </button>
+        </form>
       </div>
     </div>
   </van-dialog>
@@ -62,9 +68,11 @@
           <div>对方同意后可互加微信</div>
         </div>
         <div class="dialog-upload">
-          <div @click="closeExchangeOk" class="upload-btn">不再提示</div>
+          <form report-submit @submit="closeExchangeOk">
+            <button class="upload-btn" form-type="submit">不再提示</button>
+          </form>
         </div>
-        <img style="display: none;" @click="closeDialog" src="../../assets/images/icon-close.png" alt="" class="close">
+        <!--<img style="display: none;" @click="closeDialog" src="../../assets/images/icon-close.png" alt="" class="close">-->
       </div>
     </div>
   </van-dialog>
@@ -82,7 +90,9 @@
         <div>{{message2}}</div>
       </div>
       <div class="dialog-upload">
-        <div @click="closeMsg" class="upload-btn">我知道了</div>
+        <form report-submit @submit="closeMsg">
+          <button class="upload-btn" form-type="submit">我知道了</button>
+        </form>
       </div>
       <!--<img @click="closeMsg" src="../../assets/images/icon-close.png" alt="" class="close">-->
     </div>
@@ -199,7 +209,9 @@ export default {
     },
     methods: {
       ...mapMutations(['setUserInfoAuth', 'setUserInfo', 'setInnerAudioContext', 'setIsFirst']),
-      closeMsg(){
+      closeMsg(e){
+        let formId = e.mp.detail.formId;
+        this.collectionFormId(formId);
         this.showMsg = false;
       },
       async ajaxGetUserInfo() {
@@ -219,10 +231,14 @@ export default {
           return;
         }
       },
-      closeDialog() {
+      closeDialog(e) {
+        let formId = e.mp.detail.formId;
+        this.collectionFormId(formId);
         this.isUploadFile = false;
       },
-      toUpload() {
+      toUpload(e) {
+        let formId = e.mp.detail.formId;
+        this.collectionFormId(formId);
         if(!this.userInfo.file) {
           let url = '/pages/record/main?root=discover';
           this.isUploadFile = false;
@@ -235,7 +251,9 @@ export default {
           wx.navigateTo({url});
         }
       },
-      closeExchangeOk() {
+      closeExchangeOk(e) {
+        let formId = e.mp.detail.formId;
+        this.collectionFormId(formId);
         this.isExchangeOk = false;
         this.setIsFirst(false);
       },
@@ -544,13 +562,23 @@ export default {
           line-height: 40px;
           background: -webkit-linear-gradient(left,#FBCF00, #FB9F00);
         }
+        .upload-btn::after{
+          border: none;
+        }
       }
-      .close {
-        position: absolute;
-        width: 19px;
-        height: 19px;
-        top: 14px;
-        right: 36rpx;
+      .close-btn{
+        background: none;
+        position: static;
+        .close {
+          position: absolute;
+          width: 19px;
+          height: 19px;
+          top: 14px;
+          right: 36rpx;
+        }
+      }
+      .close-btn::after{
+        border: none;
       }
     }
   }

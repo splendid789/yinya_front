@@ -1,53 +1,56 @@
 <template>
 <div class="message-page" :style="'height: ' + clientHeight + 'px;'">
-    <van-tabs type="card" @change="selectTab" nav-class="nav-class" tab-active-class="tabs-active"  tab-class="tabs-class">
-        <van-tab class="top-tab" custom-class="tab-class" title="收到申请">
-          <div v-if="loadSuccess1">
-            <div v-if="messageArr1.length > 0">
-              <div @click="findExchange(item)" v-for="(item, index) in messageArr1" :key="index" class="message-item">
-                  <div class="top-border"></div>
-                  <div class="item-content">
-                    <div class="user-info">
-                      <img class="avatar"  :src="item.applicant.head_img" alt="">
-                      <span class="user-name">{{item.applicant.nickname}}</span>
-                    </div>
-                    <span v-if="!item.is_see" style="color: #EE8B21;" class="exchange-text">申请互加</span>
-                    <span v-else  class="exchange-text">已读</span>
-                  </div>
-              </div>
-            </div>
-            <div v-else>
-              <div class="nomssage-text">申请加你微信的人会在这里出现</div>
-              <img class="nomessage-img" src="../../assets/images/receive-no-msg.png" style="width: 208px;"/>
-              <div class="nomessage-msg">暂无新消息</div>
-            </div>
-          </div>
-        </van-tab>
-        <van-tab class="top-tab" custom-class="tab-class" title="同意互加">
-          <div v-if="loadSuccess2">
-            <div v-if="messageArr2.length > 0">
-              <div @click="findExchange(item)" v-for="(item, index) in messageArr2" :key="index" class="message-item">
-                <div class="top-border"></div>
-                <div class="item-content">
-                  <div class="user-info">
-                    <img class="avatar" :src="item.friend_info.head_img" alt="">
-                    <span class="user-name">{{item.friend_info.nickname}}</span>
-                  </div>
-                  <span v-if="!item.is_see" style="color: #EE8B21;" class="exchange-text">未读</span>
-                  <span v-else  class="exchange-text">已读</span>
+  <van-tabs type="card" @change="selectTab" nav-class="nav-class" tab-active-class="tabs-active"  tab-class="tabs-class">
+    <van-tab class="top-tab" custom-class="tab-class" title="收到申请">
+      <div v-if="loadSuccess1">
+        <div v-if="messageArr1.length > 0">
+          <form report-submit v-for="(item, index) in messageArr1" :key="index"  @submit="findExchange" :data-item="item">
+            <button form-type="submit" class="message-item">
+              <div class="top-border"></div>
+              <div class="item-content">
+                <div class="user-info">
+                  <img class="avatar"  :src="item.applicant.head_img" alt="">
+                  <span class="user-name">{{item.applicant.nickname}}</span>
                 </div>
+                <span v-if="!item.is_see" style="color: #EE8B21;" class="exchange-text">申请互加</span>
+                <span v-else  class="exchange-text">已读</span>
               </div>
-            </div>
-            <div v-else>
-              <div class="nomssage-text">同意互加微信的人会在这里出现</div>
-              <img class="nomessage-img" src="../../assets/images/success-no-msg.png"/>
-              <div class="nomessage-msg">暂无新消息</div>
-            </div>
-          </div>
-        </van-tab>
-    </van-tabs>
-
-    <i-toast id="toast" />
+            </button>
+          </form>
+        </div>
+        <div v-else>
+          <div class="nomssage-text">申请加你微信的人会在这里出现</div>
+          <img class="nomessage-img" src="../../assets/images/receive-no-msg.png" style="width: 208px;"/>
+          <div class="nomessage-msg">暂无新消息</div>
+        </div>
+      </div>
+    </van-tab>
+    <van-tab class="top-tab" custom-class="tab-class" title="同意互加">
+      <div v-if="loadSuccess2">
+        <div v-if="messageArr2.length > 0">
+          <form report-submit v-for="(item, index) in messageArr2" :key="index"  @submit="findExchange" :data-item="item">
+            <button form-type="submit" class="message-item">
+              <div class="top-border"></div>
+              <div class="item-content">
+                <div class="user-info">
+                  <img class="avatar" :src="item.friend_info.head_img" alt="">
+                  <span class="user-name">{{item.friend_info.nickname}}</span>
+                </div>
+                <span v-if="!item.is_see" style="color: #EE8B21;" class="exchange-text">未读</span>
+                <span v-else  class="exchange-text">已读</span>
+              </div>
+            </button>
+          </form>
+        </div>
+        <div v-else>
+          <div class="nomssage-text">同意互加微信的人会在这里出现</div>
+          <img class="nomessage-img" src="../../assets/images/success-no-msg.png"/>
+          <div class="nomessage-msg">暂无新消息</div>
+        </div>
+      </div>
+    </van-tab>
+  </van-tabs>
+  <i-toast id="toast" />
 </div>
 </template>
 
@@ -180,23 +183,37 @@ export default {
             });
 
         },
-        async findExchange(item) {
-            let config = {
-                url: 'exchange/see_exchange/',
-                method: 'get',
-                data: {exchange_id: item.id}
-            }
-            await wxApi.request(config)
-            if(item.status === 1) {
-              mpvue.setStorageSync('exChangeConfig', JSON.stringify(item));
-              wx.navigateTo({url: '/pages/exchange/main?root=message'});
-            }
-            else {
-              mpvue.setStorageSync('exChangeConfig', JSON.stringify(item));
-              wx.navigateTo({url: '/pages/mrequest/main'});
-            }
-
-        }
+        async findExchange(e) {
+          let formId = e.mp.detail.formId;
+          await this.collectionFormId(formId);
+          let item = e.currentTarget.dataset.item;
+          let config = {
+              url: 'exchange/see_exchange/',
+              method: 'get',
+              data: {exchange_id: item.id}
+          }
+          await wxApi.request(config)
+          if(item.status === 1) {
+            mpvue.setStorageSync('exChangeConfig', JSON.stringify(item));
+            wx.navigateTo({url: '/pages/exchange/main?root=message'});
+          }
+          else {
+            mpvue.setStorageSync('exChangeConfig', JSON.stringify(item));
+            wx.navigateTo({url: '/pages/mrequest/main'});
+          }
+        },
+        async collectionFormId(formid) {
+          let config = {
+            url: 'exchange/collect_formid/',
+            method: 'post',
+            data: {formid}
+          };
+          let resInfo = await wxApi.request(config);
+          if(resInfo.errno === 0) {
+          }
+          else {
+          }
+        },
     },
     onTabItemTap() {
     },
@@ -260,6 +277,9 @@ export default {
     .message-item {
         border-radius: 5px;
         margin-bottom: 12px;
+        background: none;
+        padding-left:0 ;
+        padding-right: 0;
         .top-border {
             height: 4px;
             background-color: #F4CF24;
@@ -297,6 +317,9 @@ export default {
                 font-family: "PingFangSC-Regular";
             }
         }
+    }
+    .message-item::after{
+      border: none;
     }
 }
 </style>
