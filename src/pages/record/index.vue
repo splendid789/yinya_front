@@ -3,42 +3,54 @@
   <v-lyrics @collectionFormId="collectionFormId" v-if="!hasFile" :lyricsRefresh="lyricsRefresh"></v-lyrics>
   <div v-if="hasFile" class="has-file-wrap">
     <div class="tip-text" style="margin-bottom: 55px;">当前声音</div>
-    <div class="time-text">{{playTime}}s</div>
-    <form class="operator-container" report-submit @submit="playManger">
-      <button :class="{'circle-btn': true, 'pause': playRecord}" form-type="submit">
-        <div v-if="!playRecord" class="play"></div>
-        <div v-else class="square"></div>
-      </button>
-    </form>
+    <div class="spinner-container">
+      <div v-if="playRecord" class="spinner"></div>
+      <form class="operator-container" report-submit @submit="playManger">
+        <button :class="{'circle-btn': true, 'pause': playRecord}" form-type="submit">
+          <div v-if="!playRecord" class="play"></div>
+          <div v-else class="square"></div>
+        </button>
+      </form>
+    </div>
     <div class="exchange-pic">
-      <div class="btn-exchange" @click="reRecord">重新录制</div>
+      <form report-submit @submit="reRecord">
+        <button class="btn-exchange" form-type="submit">重新录制</button>
+      </form>
     </div>
   </div>
   <div v-else>
     <div v-if="!stopRecord">
-      <div style="margin-bottom: 52rpx;" v-if="!startRecord">
+      <div style="margin-bottom: 21px;" v-if="!startRecord">
         <div class="tip-text">请录制一段声音</div>
         <div style="color: #999;font-size: 14px; text-align: center;line-height: 14px;">声音用于向对方发送申请，也会在首页展示</div>
       </div>
-      <div :style="'visibility:' + (startRecord ? ';' : 'hidden;') " class="time-text" v-if="startRecord">{{recordTime}}s</div>
-      <form class="operator-container" report-submit @submit="recordManger">
-        <button :class="{'circle-btn': true, 'pause': playRecord}" form-type="submit">
-          <span v-if="!startRecord">开始录制</span>
-          <div v-else class="square"></div>
-        </button>
-      </form>
+      <div v-else style="width: 100%;height: 29px;margin-top: 44px;margin-bottom: 21px;"></div>
+      <div class="spinner-container">
+        <div v-if="startRecord" class="spinner"></div>
+        <form class="operator-container" report-submit @submit="recordManger">
+          <button :class="{'circle-btn': true, 'pause': playRecord}" form-type="submit">
+            <span v-if="!startRecord">开始录制</span>
+            <div v-else class="square"></div>
+          </button>
+        </form>
+      </div>
     </div>
     <div v-else>
-      <div class="tip-text">请点击保存</div>
-      <div :style="'visibility:' + (true ? ';' : 'hidden;') " class="time-text time-text-2">{{playTime}}s</div>
-      <form class="operator-container" report-submit @submit="playManger">
+      <div style="width: 100%;height: 29px;margin-top: 44px;margin-bottom: 21px;">
+        <div class="tip-text">请点击保存</div>
+      </div>
+      <form class="operator-container1" report-submit @submit="playManger">
         <img @click="reRecord" class="operator-text1" src="../../assets/images/icon-rerecord.png" alt="">
-        <button :class="{'circle-btn': true, 'pause': startRecord}" form-type="submit">
-          <div v-if="!playRecord" class="play"></div>
-          <div v-else class="square"></div>
-        </button>
+        <div class="spinner-container">
+          <div v-if="playRecord" class="spinner"></div>
+          <button :class="{'circle-btn': true, 'pause': startRecord}" form-type="submit">
+            <div v-if="!playRecord" class="play"></div>
+            <div v-else class="square"></div>
+          </button>
+        </div>
         <img @click="saveAudio" class="operator-text2" src="../../assets/images/icon-save-preview.png" alt="">
       </form>
+
     </div>
   </div>
   <i-toast id="toast" />
@@ -64,14 +76,12 @@ export default {
           recordAuth:false,
           startRecord:false,
           playRecord:false,
-          recordTime:0,
-          playTime:0,
+          duration:0,
           stopRecord:false,
           user:null,
           recorderManager: null, // 录音管理器实例
           innerAudioContext: null, // 播放音频实例
           tempFilePath: '',// 录音资源临时文件路径
-          timer:null,
           lyricsRefresh: 0,
         }
     },
@@ -98,8 +108,6 @@ export default {
         this.recorderManager.stop();
         this.recorderManager = null;
       }
-      clearInterval(this.timer);
-      this.timer = null;
       this.init();
     },
     onUnload() {
@@ -111,8 +119,6 @@ export default {
         this.recorderManager.stop();
         this.recorderManager = null;
       }
-      clearInterval(this.timer);
-      this.timer = null;
       this.init();
     },
     methods: {
@@ -163,12 +169,10 @@ export default {
         this.setUserInfo(userInfo.user);
         if(this.user && this.user.file){
           this.playRecord = false;
-          this.playTime = this.user.duration;
           this.initPlay(this.user.file);
           if (!inLyrics && !newSong) this.hasFile = true;
         } else{
           this.startRecord = false;
-          this.recordTime = 0;
           this.stopRecord = false;
           if (!inLyrics && !newSong) this.hasFile = false;
         }
@@ -199,11 +203,6 @@ export default {
         let formId = e.mp.detail.formId;
         if(!this.playRecord){
           this.innerAudioContext.play();
-          if (this.timer) clearInterval(this.timer);
-          this.timer = setInterval(()=>{
-            console.log('-----------')
-            this.playTime += 1;
-          },1000);
         }else{
           this.innerAudioContext.stop();
         }
@@ -233,56 +232,35 @@ export default {
       listenAudioEvent() {
         this.innerAudioContext.onPlay((res) => {
           this.playRecord = true;
-          this.playTime = 0;
         });
         this.innerAudioContext.onError((error) => {
           console.log('error=',error)
         });
         this.innerAudioContext.onEnded((res) => {
-          let result = clearInterval(this.timer);
-          this.timer = null;
           this.playRecord = false;
-          if(this.hasFile){
-            this.playTime = this.user.duration;
-          }else{
-            this.playTime = this.recordTime;
-          }
         });
         this.innerAudioContext.onStop((res) => {
-          clearInterval(this.timer);
-          this.timer = null;
           this.playRecord = false;
-          if(this.hasFile){
-            this.playTime = this.user.duration;
-          }else{
-            this.playTime = this.recordTime;
-          }
         });
       },
       listenRecordEvent() {
         this.recorderManager.onStart(() => {
           this.startRecord = true;
-          if (this.timer) clearInterval(this.timer);
-          this.timer = setInterval(()=>{
-            this.recordTime += 1;
-          },1000);
         })
         this.recorderManager.onStop((res) => {
-          clearInterval(this.timer);
-          this.timer = null;
           const { tempFilePath, duration } = res;
           this.tempFilePath = tempFilePath;
-          this.playTime = Math.ceil(res.duration/1000);
+          this.duration = Math.ceil(res.duration/1000);
           this.initPlay(this.tempFilePath);
-          this.recordTime = this.playTime;
           this.stopRecord = true;
           this.startRecord = false;
         })
       },
-      reRecord(){
+      reRecord(e){
+        let formId = e.mp.detail.formId;
+        this.collectionFormId(formId);
         this.innerAudioContext.stop();
         this.startRecord = false;
-        this.recordTime = 0;
         this.stopRecord = false;
         this.hasFile = false;
       },
@@ -292,7 +270,7 @@ export default {
           filePath: this.tempFilePath,
           name: 'file',
           formData: {
-            duration: this.playTime
+            duration: this.duration
           }
         }
         let uploadInfo = await wxApi.uploadFile(config);
@@ -305,7 +283,6 @@ export default {
             })
             this.user = JSON.parse(uploadInfo.data).results.user;
             this.playRecord = false;
-            this.playTime = this.user.duration;
             this.initPlay(this.user.file);
             this.hasFile = true;
           }
@@ -376,12 +353,38 @@ export default {
       margin-top: 9px;
       margin-top: -4px;
     }
+    .spinner-container{
+      width: 187px;
+      height: 187px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .spinner {
+      width: 177px;
+      height: 177px;
+      border-radius: 100%;
+      border:5px solid #FBCF00;
+      -webkit-animation: scaleout 1.4s infinite ease-in-out;
+    }
+
+    @-webkit-keyframes scaleout {
+      0% {
+        -webkit-transform: scale(0.6);
+      }
+      100% {
+        -webkit-transform: scale(1.0);
+        opacity: 0.2;
+      }
+    }
     .operator-container {
-        position: relative;
+        position: absolute;
         display: flex;
         height: 127px;
         justify-content: center;
         align-items: center;
+        top:30px;
+        left:30px;
+        z-index: 10;
         .operator-text1 {
             position: absolute;
             left: 43px;
@@ -433,6 +436,68 @@ export default {
             background: none;
             background-color: #EE8B21 !important;
         }
+    }
+    .operator-container1 {
+      position: relative;
+      display: flex;
+      height: 187px;
+      justify-content: center;
+      align-items: center;
+      .operator-text1 {
+        position: absolute;
+        left: 30px;
+        top: 60px;
+      }
+      .circle-btn {
+        flex: 1;
+        width: 127px;
+        height: 127px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: -webkit-linear-gradient(right top,#FBA500 , #FBCB00 );
+        // background-color: #FBA500;
+        border-radius: 50%;
+        position: absolute;
+        top:30px;
+        left:30px;
+        z-index: 10;
+        span {
+          font-size: 20px;
+          color: #fff;
+          line-height: 24px;
+        }
+        .square {
+          width: 40px;
+          height: 40px;
+          background-color: #fff;
+          border-radius: 5px;
+        }
+        .play {
+          position: relative;
+          box-sizing: content-box;
+          width: 0;
+          height: 0;
+          border:19px solid #000;
+          transform: translate(32%, 0);
+          border-width: 19px 31px 19px 31px;
+          border-color: transparent transparent transparent #fff;
+        }
+      }
+      .operator-text2 {
+        position: absolute;
+        right: 30px;
+        top: 60px;
+      }
+      .operator-text1,
+      .operator-text2 {
+        width: 44px;
+        height: 44px;
+      }
+      .pause {
+        background: none;
+        background-color: #EE8B21 !important;
+      }
     }
     .reward-container {
         .reward-title {

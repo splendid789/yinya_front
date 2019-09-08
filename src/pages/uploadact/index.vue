@@ -1,12 +1,14 @@
 <template>
     <div class="uploadact-page">
-        <div class="tip-text" style="color: #333; margin-bottom: 17px;">请上传微信号</div>
-        <div class="tip-text" style="fong-size: 14px; margin-bottom: 30px;">互相喜欢对方声音 才可互看微信号</div>
-        <div class="input-account">
-            <input :value="account" @input="inputAccount" type="text" class="input-act" :placeholder="isFocus ? '' : '输入微信号'" @focus="onFocus" @blur="onBlur">
-        </div>
-        <div @click="compleUpload" class="comple-btn">完成</div>
-        <i-toast id="toast" />
+      <div class="tip-text" style="color: #333; margin-bottom: 17px;">请上传微信号</div>
+      <div class="tip-text" style="fong-size: 14px; margin-bottom: 30px;">互相喜欢对方声音 才可互看微信号</div>
+      <div class="input-account">
+          <input :value="account" @input="inputAccount" type="text" class="input-act" :placeholder="isFocus ? '' : '输入微信号'" @focus="onFocus" @blur="onBlur">
+      </div>
+      <form report-submit @submit="compleUpload">
+        <button form-type="submit" class="comple-btn">完成</button>
+      </form>
+      <i-toast id="toast" />
     </div>
 </template>
 <script>
@@ -32,71 +34,84 @@ export default {
         }
     },
     methods: {
-        ...mapMutations(['setUserInfo']),
-        inputAccount(e) {
-            this.account = e.mp.detail.value;
-        },
-        onFocus() {
-            this.isFocus = true;
-        },
-        onBlur() {
-            this.isFocus = false;
-        },
-        async compleUpload() {
-            if(this.account === '') {
-                $Toast({
-                    content: '微信号不能为空！',
-                    type: 'warning'
-                })
-                return;
-            }
-            let config = {
-                url: 'users/upload_wechat_number/',
-                method: 'post',
-                data: {
-                    wechat_number: this.account
-                }
-            }
-            let resInfo = await wxApi.request(config);
-            if(resInfo.errno == 0) {
-                this.setUserInfo(resInfo.results.user);
-                if(this.rootPage === 'mine') {
-                    $Toast({
-                        content: '保存成功',
-                        type: 'success'
-                    })
-                    setTimeout(() => {
-                        wx.switchTab({url: '/pages/mine/main'});
-                    }, 1000);
-                }
-                else if(this.rootPage === 'record'){
-                    $Toast({
-                        content: '保存成功',
-                        type: 'success'
-                    })
-                    setTimeout(() => {
-                        wx.switchTab({url: '/pages/discover/main'});
-                    }, 1000);
-                }
-                else if(this.rootPage === 'discover') {
-                    $Toast({
-                        content: '保存成功',
-                        type: 'success'
-                    })
-                    setTimeout(() => {
-                        wx.switchTab({url: '/pages/discover/main'});
-                    }, 1000);
-
-                }
-
-            }
-            else {
-                $Toast({
-                    content: resInfo.results,
-                    type: 'error'
-                })
-            }
+      ...mapMutations(['setUserInfo']),
+      inputAccount(e) {
+          this.account = e.mp.detail.value;
+      },
+      onFocus() {
+          this.isFocus = true;
+      },
+      onBlur() {
+          this.isFocus = false;
+      },
+      async compleUpload(e) {
+        let formId = e.mp.detail.formId;
+        await this.collectionFormId(formId);
+        if(this.account === '') {
+          $Toast({
+              content: '微信号不能为空！',
+              type: 'warning'
+          })
+          return;
         }
+        let config = {
+          url: 'users/upload_wechat_number/',
+          method: 'post',
+          data: {
+              wechat_number: this.account
+          }
+        }
+        let resInfo = await wxApi.request(config);
+        if(resInfo.errno == 0) {
+        this.setUserInfo(resInfo.results.user);
+          if(this.rootPage === 'mine') {
+              $Toast({
+                  content: '保存成功',
+                  type: 'success'
+              })
+              setTimeout(() => {
+                  wx.switchTab({url: '/pages/mine/main'});
+              }, 1000);
+          }
+          else if(this.rootPage === 'record'){
+              $Toast({
+                  content: '保存成功',
+                  type: 'success'
+              })
+              setTimeout(() => {
+                  wx.switchTab({url: '/pages/discover/main'});
+              }, 1000);
+          }
+          else if(this.rootPage === 'discover') {
+              $Toast({
+                  content: '保存成功',
+                  type: 'success'
+              })
+              setTimeout(() => {
+                  wx.switchTab({url: '/pages/discover/main'});
+              }, 1000);
+
+          }
+        }
+        else {
+          $Toast({
+              content: resInfo.results,
+              type: 'error'
+          })
+        }
+      },
+      async collectionFormId(formid) {
+        let config = {
+          url: 'exchange/collect_formid/',
+          method: 'post',
+          data: {formid}
+        };
+        let resInfo = await wxApi.request(config);
+        if(resInfo.errno === 0) {
+        }
+        else {
+        }
+      },
     }
 }
 </script>

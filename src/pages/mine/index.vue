@@ -13,20 +13,24 @@
 
     <!-- 已上传语音状态 -->
     <div class="item-container" v-if="userInfo.file">
-        <div class="mine-account item" @click="openMyVoice">
-            <div class="left">
-                <img style="width: 22px; height: 28px; margin-right: 20px;" src="../../assets/images/icon-voice.png" alt="">
-                <span class="text">我的声音</span>
-            </div>
-            <img style="width: 9px; height: 15px;" src="../../assets/images/icon-nextpage.png" alt="">
-        </div>
-        <div class="mine-voice item" @click="openWeChat">
-            <div class="left">
-                <img style="width: 28px; height: 28px; margin-right: 14px;" src="../../assets/images/icon-wechat.png" alt="">
-                <span class="text">我的微信</span>
-            </div>
-            <img style="width: 9px; height: 15px;" src="../../assets/images/icon-nextpage.png" alt="">
-        </div>
+      <form report-submit @submit="openMyVoice">
+        <button form-type="submit" class="mine-account item">
+          <div class="left">
+            <img style="width: 22px; height: 28px; margin-right: 20px;" src="../../assets/images/icon-voice.png" alt="">
+            <span class="text">我的声音</span>
+          </div>
+          <img style="width: 9px; height: 15px;" src="../../assets/images/icon-nextpage.png" alt="">
+        </button>
+      </form>
+      <form report-submit @submit="openWeChat">
+        <button form-type="submit" class="mine-voice item">
+          <div class="left">
+            <img style="width: 28px; height: 28px; margin-right: 14px;" src="../../assets/images/icon-wechat.png" alt="">
+            <span class="text">我的微信</span>
+          </div>
+          <img style="width: 9px; height: 15px;" src="../../assets/images/icon-nextpage.png" alt="">
+        </button>
+      </form>
     </div>
     <i-toast id="toast" />
 </div>
@@ -34,6 +38,9 @@
 
 <script>
 import {mapGetters, mapMutations} from 'vuex';
+import WxApi from '../../utils/WxApi'
+const wxApi = new WxApi();
+const { $Toast } = require('../../../static/iview/base/index');
 export default {
     data() {
         return {
@@ -60,16 +67,32 @@ export default {
       }
     },
     methods: {
-        ...mapMutations(['setInnerAudioContext']),
-        goRecord() {
-            wx.navigateTo({url: '/pages/record/main'})
-        },
-        openMyVoice() {
-            wx.navigateTo({url: '/pages/record/main?root=mine'})
-        },
-        openWeChat() {
-            wx.navigateTo({url: '/pages/uploadact/main?root=mine'})
+      ...mapMutations(['setInnerAudioContext']),
+      goRecord() {
+          wx.navigateTo({url: '/pages/record/main'})
+      },
+      async openMyVoice(e) {
+        let formId = e.mp.detail.formId;
+        await this.collectionFormId(formId);
+        wx.navigateTo({url: '/pages/record/main?root=mine'})
+      },
+      async openWeChat(e) {
+        let formId = e.mp.detail.formId;
+        await this.collectionFormId(formId);
+        wx.navigateTo({url: '/pages/uploadact/main?root=mine'})
+      },
+      async collectionFormId(formid) {
+        let config = {
+          url: 'exchange/collect_formid/',
+          method: 'post',
+          data: {formid}
+        };
+        let resInfo = await wxApi.request(config);
+        if(resInfo.errno === 0) {
         }
+        else {
+        }
+      },
     },
     onTabItemTap() {
     },

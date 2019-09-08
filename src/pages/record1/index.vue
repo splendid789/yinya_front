@@ -1,57 +1,78 @@
 <template>
-<div class="record-page">
-    <!-- <textarea class="textarea" :disabled="isDisabled" @focus="bindTextAreaFocus" @blur="bindTextAreaBlur" :value="textAreaValue" /> -->
-    <div v-if="userInfo.file && rootPage == 'mine' && isFirst" class="tip-text" style="margin-bottom: 65px;">当前声音</div>
-    <block v-else>
-        <div v-if="playStatus > 1" class="tip-text" style="margin-bottom: 65px;">请点击保存</div>
-        <div v-else style="margin-bottom: 34px;">
-            <div class="tip-text">请录制一段声音</div>
-            <div style="color: #999;font-size: 14px; text-align: center;">声音用于向对方发送申请，也会在首页展示 </div>
-        </div>
-    </block>
-    <div v-if="playStatus == 3" :style="'visibility:' + (playStatus > 0 ? ';' : 'hidden;') " class="time-text">{{currentTime}}s</div>
-    <div v-else :style="'visibility:' + (playStatus > 0 ? ';' : 'hidden;') " class="time-text">{{recordTime}}s</div>
-    <div  class="operator-container">
-        <!-- <div @click="reRecord" v-if="playStatus > 1" class="operator-text1">重新录制</div> -->
-        <img @click="reRecord" v-if="playStatus > 1" class="operator-text1" src="../../assets/images/icon-rerecord.png" alt="">
-        <div @click="changePlayStatus" :class="{'circle-btn': true, 'pause': playStatus == 1 || playStatus == 3}">
-            <span v-if="playStatus == 0">开始录制</span>
-            <div v-else-if="playStatus ==1 || playStatus == 3" class="square"></div>
-            <div v-else-if="playStatus == 2" class="play"></div>
-        </div>
-        <!-- <div @click="saveAudio" v-if="playStatus > 1" class="operator-text2">保存预览</div> -->
-        <img @click="saveAudio" v-if="playStatus > 1" class="operator-text2" src="../../assets/images/icon-save-preview.png" alt="">
+<div class="record-page" v-if="isPageLoaded">
+  <v-lyrics @collectionFormId="collectionFormId" v-if="!hasFile" :lyricsRefresh="lyricsRefresh"></v-lyrics>
+  <div v-if="hasFile" class="has-file-wrap">
+    <div class="tip-text" style="margin-bottom: 55px;">当前声音</div>
+    <div class="time-text">{{playTime}}s</div>
+    <form class="operator-container" report-submit @submit="playManger">
+      <button :class="{'circle-btn': true, 'pause': playRecord}" form-type="submit">
+        <div v-if="!playRecord" class="play"></div>
+        <div v-else class="square"></div>
+      </button>
+    </form>
+    <div class="exchange-pic">
+      <div class="btn-exchange" @click="reRecord">重新录制</div>
     </div>
-    <!-- <div v-if="rootPage=='mine'" class="exchange-pic">
-        <div class="btn-exchange" @click="reRecord">重新录制</div>
-    </div> -->
-    <i-toast id="toast" />
+  </div>
+  <div v-else>
+    <div v-if="!stopRecord">
+      <div style="margin-bottom: 52rpx;" v-if="!startRecord">
+        <div class="tip-text">请录制一段声音</div>
+        <div style="color: #999;font-size: 14px; text-align: center;line-height: 14px;">声音用于向对方发送申请，也会在首页展示</div>
+      </div>
+      <div :style="'visibility:' + (startRecord ? ';' : 'hidden;') " class="time-text" v-if="startRecord">{{recordTime}}s</div>
+      <form class="operator-container" report-submit @submit="recordManger">
+        <button :class="{'circle-btn': true, 'pause': playRecord}" form-type="submit">
+          <span v-if="!startRecord">开始录制</span>
+          <div v-else class="square"></div>
+        </button>
+      </form>
+    </div>
+    <div v-else>
+      <div class="tip-text">请点击保存</div>
+      <div :style="'visibility:' + (true ? ';' : 'hidden;') " class="time-text time-text-2">{{playTime}}s</div>
+      <form class="operator-container" report-submit @submit="playManger">
+        <img @click="reRecord" class="operator-text1" src="../../assets/images/icon-rerecord.png" alt="">
+        <button :class="{'circle-btn': true, 'pause': startRecord}" form-type="submit">
+          <div v-if="!playRecord" class="play"></div>
+          <div v-else class="square"></div>
+        </button>
+        <img @click="saveAudio" class="operator-text2" src="../../assets/images/icon-save-preview.png" alt="">
+      </form>
+    </div>
+  </div>
+  <i-toast id="toast" />
 </div>
 </template>
 
 <script>
 import WxApi from '../../utils/WxApi'
 import {mapMutations, mapGetters} from 'vuex';
+import vLyrics from '../../components/record/lyrics';
+
 const wxApi = new WxApi();
 const { $Toast } = require('../../../static/iview/base/index');
 export default {
+    components: {
+      vLyrics,
+    },
     data() {
         return {
-            recordAuth: false,  // 录音权限,
-            textAreaValue: '请输入文本内容', // 文本域内容
-            playStatus: 0,  // 0/1/2/3  录音授权/开始播放/录制结束/回放录音,
-            rewardPriceArr: [0.5,2,5], // 打赏金额,
-            recorderManager: null, // 录音管理器实例
-            innerAudioContext: null, // 播放音频实例
-            tempFilePath: '',  // 录音资源临时文件路径
-            recordTime: 0, // 录音时长
-            recordPlayTime: 0,  // 录音播放时长
-            recordTimer: null, // 录音定时器
-            palyRecordTimer: null, // 播放录音定时器
-            currentTime: 0, // 当前录音时间
-            isDisabled: false, // 是否禁用文本域
-            rootPage: '',
-            isFirst: true
+          isPageLoaded: false,
+          rootPage:'mine',
+          hasFile:false,
+          recordAuth:false,
+          startRecord:false,
+          playRecord:false,
+          recordTime:0,
+          playTime:0,
+          stopRecord:false,
+          user:null,
+          recorderManager: null, // 录音管理器实例
+          innerAudioContext: null, // 播放音频实例
+          tempFilePath: '',// 录音资源临时文件路径
+          timer:null,
+          lyricsRefresh: 0,
         }
     },
     computed: {
@@ -61,249 +82,251 @@ export default {
         this.rootPage = this.$root.$mp.query.root;
         let authSetting = await wxApi.getSetting();
         if(authSetting.authSetting['scope.record']) {
-            this.userInfoAuth = true;
+            this.recordAuth = true;
         }
         else {
-            this.userInfoAuth = false;
+            this.recordAuth = false;
         }
-        if(this.rootPage === 'mine') {
-            if(this.userInfo.file) {
-                this.init();
-                this.playStatus = 2;
-                this.recordTime = this.userInfo.duration;
-                let audioInfo = await this.downloadAudio(this.userInfo.file);
-                this.tempFilePath = audioInfo.tempFilePath
-                this.innerAudioContext = wx.createInnerAudioContext()
-                this.innerAudioContext.src = this.tempFilePath;
-                this.listenAudioEvent();
-            }
-        }
-        else if(this.rootPage === 'discover') {
-           this.init();
-        }
+        this.init();
     },
     onHide() {
-        if(this.innerAudioContext) {
-            this.stopPlayRecord()
-        }
-        if(this.recorderManager) {
-            this.stopRecord();
-        }
-        this.init();
+      if(this.innerAudioContext) {
+        this.innerAudioContext.destroy();
+        this.innerAudioContext = null;
+      }
+      if(this.recorderManager) {
+        this.recorderManager.stop();
+        this.recorderManager = null;
+      }
+      clearInterval(this.timer);
+      this.timer = null;
+      this.init();
+    },
+    onUnload() {
+      if(this.innerAudioContext) {
+        this.innerAudioContext.destroy();
+        this.innerAudioContext = null;
+      }
+      if(this.recorderManager) {
+        this.recorderManager.stop();
+        this.recorderManager = null;
+      }
+      clearInterval(this.timer);
+      this.timer = null;
+      this.init();
     },
     methods: {
-        ...mapMutations(['setUserInfo', 'setInnerAudioContext', 'setRecorderManager']),
-        init() {
-           if(this.palyRecordTimer) {
-               clearInterval(this.palyRecordTimer);
-           }
-           this.palyRecordTimer = null;
-           if(this.recordTimer) {
-               clearInterval(this.recordTimer);
-           }
-           this.recordTimer = null;
-           this.playStatus = 0;
-           this.recorderManager = null;
-           this.innerAudioContext = null;
-           this.tempFilePath = '';
-           this.recordTime = 0;
-           this.recordPlayTime = 0;
-           this.isFirst = true;
-        },
-        async downloadAudio(url) {
-            let downloadInfo = await wxApi.downloadFile(url);
-            if(downloadInfo.statusCode == 200) {
-                return downloadInfo;
-            }
-            else {
-            }
-        },
-        async changePlayStatus () {
-            switch(this.playStatus) {
-                case 0:
-                    await this.getRecordAuth();  break;
-                case 1:
-                    this.stopRecord();  break;
-                case 2:
-                    this.playRecord();  break;
-                case 3:
-                    this.stopPlayRecord();  break;
-            }
-        },
-
-        async getRecordAuth() {
-            let authInfo = await wxApi.getSetting();
-            let flag = authInfo.authSetting['scope.record'];
-            if(!flag) {
-                let recordAuth = await wxApi.authorize('scope.record');
-                this.recorderManager = wx.getRecorderManager()
-                this.setRecorderManager(this.recorderManager)
-                this.listenRecordEvent();
-                this.startRecrod();
-            }
-            else {
-                this.recorderManager = wx.getRecorderManager()
-                this.setRecorderManager(this.recorderManager)
-                this.listenRecordEvent();
-                this.startRecrod();
-            }
-        },
-        startRecrod() {
-            const options = {
-              format: 'mp3',
-              sampleRate: 48000,
-              encodeBitRate: 64000
-            }
-            this.recorderManager.start(options);
-        },
-        stopRecord(isLeavePage = false) {
-            clearInterval(this.recordTimer);
-            this.playStatus++;
-            this.isDisabled = false;
-            this.recorderManager.stop();
-            if(!isLeavePage) {
-            }
-        },
-        playRecord() {
-            if(!this.innerAudioContext) {
-                this.innerAudioContext = wx.createInnerAudioContext()
-                this.innerAudioContext.src = this.tempFilePath;
-                this.listenAudioEvent();
-                this.setInnerAudioContext(this.innerAudioContext);
-            }
-            else {
-                this.innerAudioContext.destroy();
-                this.innerAudioContext = wx.createInnerAudioContext()
-                this.innerAudioContext.src = this.tempFilePath;
-                this.listenAudioEvent();
-                this.setInnerAudioContext(this.innerAudioContext);
-            }
-            this.playStatus++;
-            this.innerAudioContext.play();
-            this.palyRecordTimer = setInterval(() => {
-                this.currentTime++;
-            },1000);
-        },
-        stopPlayRecord() {
-            clearInterval(this.palyRecordTimer)
-            this.playStatus = 2;
-            this.currentTime = 0;
-            this.innerAudioContext.destroy();
-            this.innerAudioContext = null;
-            this.setInnerAudioContext(null);
-        },
-        listenRecordEvent() {
-            this.recorderManager.onStart(() => {
-                this.playStatus++;
-                this.recordTime++;
-
-                this.recordTimer = setInterval(() => {
-                    if(this.recordTime >= 60) {
-                        clearInterval(this.recordTimer);
-                        this.stopRecord();
-                        return;
-                    }
-                    this.recordTime++;
-                }, 1000);
-            })
-            this.recorderManager.onPause(() => {
-            })
-            this.recorderManager.onStop((res) => {
-                const { tempFilePath, duration } = res;
-              this.tempFilePath = tempFilePath;
-                if(this.recordTime > duration) {
-                    this.recordPlayTime = Math.floor(duration);
-                }
-                else if(this.recordTime < duration) {
-                    this.recordPlayTime++;
-                }
-                else if(this.recordTime == duration) {
-                    this.recordPlayTime = duration;
-                }
-            })
-            this.recorderManager.onFrameRecorded((res) => {
-                const { frameBuffer } = res;
-            })
-        },
-        listenAudioEvent() {
-            this.innerAudioContext.onPlay((res) => {
-            });
-            this.innerAudioContext.onError((res) => {
-            });
-            this.innerAudioContext.onEnded((res) => {
-                clearInterval(this.palyRecordTimer)
-                this.playStatus = 2;
-                this.currentTime = 0;
-                this.innerAudioContext.stop();
-            });
-        },
-        reRecord() {
-            if(this.innerAudioContext) {
-                this.stopPlayRecord();
-            }
-            this.isFirst = false;
-            this.playStatus = 0;
-            if(this.innerAudioContext) {
-                this.innerAudioContext.destroy();
-            }
-            this.recorderManager = null;
-            this.tempFilePath = '';
-            this.recordTime = 0;
-            this.recordPlayTime = 0;
-            this.recordTimer = null;
-            this.palyRecordTimer = null;
-            this.currentTime = 0;
-            this.textAreaValue = '请输入文本内容';
-            this.rewardPriceArr = [0.5,2,5];
-        },
-        async saveAudio() {
-            let config = {
-                url: 'users/upload_record/',
-                filePath: this.tempFilePath,
-                name: 'file',
-                formData: {
-                    duration: this.recordTime
-                }
-            }
-            let uploadInfo = await wxApi.uploadFile(config);
-            if(JSON.parse(uploadInfo.data).errno == 0) {
-                this.setUserInfo(JSON.parse(uploadInfo.data).results.user);
-                if(this.rootPage === 'mine') {
-                    $Toast({
-                        content: '保存成功',
-                        type: 'success'
-                    })
-                    setTimeout(() => {
-                        wx.switchTab({url: '/pages/mine/main'});
-                    }, 1000);
-                }
-                else {
-                    $Toast({
-                        content: '保存成功',
-                        type: 'success'
-                    })
-                    setTimeout(() => {
-                        wx.navigateTo({url: '/pages/uploadact/main?root=record'});
-                    }, 1000);
-
-                }
-            }
-            else {
-                $Toast({
-                    content: JSON.parse(uploadInfo.data).results,
-                    type: 'error'
-                })
-            }
-        },
-    },
-    onUnload () {
-        if(this.innerAudioContext) {
-            this.stopPlayRecord();
+      ...mapMutations(['setUserInfo', 'setInnerAudioContext', 'setRecorderManager']),
+      async getUserInfo() {
+        let config = {
+          url: 'users/me/',
+          method: 'get'
         }
-        if(this.recorderManager) {
-            this.stopRecord(true);
+        let res = await wxApi.request(config);
+        if(res.errno == 0) {
+          return res.results;
         }
-        this.init();
+        else {
+          $Toast({
+            content: '错误码:10001',
+            type: 'error'
+          })
+          return null;
+        }
+      },
+      collectionFormId(formid) {
+        let config = {
+          url: 'exchange/collect_formid/',
+          method: 'post',
+          data: {formid}
+        };
+        wxApi.request(config);
+      },
+      async init() {
+        let userInfo = await this.getUserInfo();
+
+        // 前往更多歌曲页选中特定歌曲后newSong会变更为true
+        // 当newSong为true时，直接替换掉当前页面的歌曲
+        const newSong = wx.getStorageSync('newSong');
+        wx.setStorageSync('newSong', false);
+        if (newSong) this.lyricsRefresh++;
+
+        // 被逼无奈，在跳转更多歌曲页时inLyrics会设为true
+        const inLyrics = wx.getStorageSync('inLyrics');
+        if (inLyrics) {
+          setTimeout(() => {
+            wx.setStorageSync('inLyrics', false);
+          }, 80);
+        }
+
+        this.user = userInfo.user;
+        this.setUserInfo(userInfo.user);
+        if(this.user && this.user.file){
+          this.playRecord = false;
+          this.playTime = this.user.duration;
+          this.initPlay(this.user.file);
+          if (!inLyrics && !newSong) this.hasFile = true;
+        } else{
+          this.startRecord = false;
+          this.recordTime = 0;
+          this.stopRecord = false;
+          if (!inLyrics && !newSong) this.hasFile = false;
+        }
+        this.isPageLoaded = true;
+      },
+      initPlay(src){
+        if(!this.innerAudioContext){
+          this.innerAudioContext = wx.createInnerAudioContext()
+          this.innerAudioContext.src = src;
+          this.listenAudioEvent();
+          this.setInnerAudioContext(this.innerAudioContext);
+        }else{
+          this.innerAudioContext.src = src;
+          this.listenAudioEvent();
+          this.setInnerAudioContext(this.innerAudioContext);
+        }
+      },
+      recordManger(e){
+        let formId = e.mp.detail.formId;
+        if(!this.startRecord){
+          this.getRecordAuth();
+        }else{
+          this.recorderManager.stop();
+        }
+        this.collectionFormId(formId);
+      },
+      playManger(e){
+        let formId = e.mp.detail.formId;
+        if(!this.playRecord){
+          this.innerAudioContext.play();
+          if (this.timer) clearInterval(this.timer);
+          this.timer = setInterval(()=>{
+            console.log('-----------')
+            this.playTime += 1;
+          },1000);
+        }else{
+          this.innerAudioContext.stop();
+        }
+        this.collectionFormId(formId);
+      },
+      async getRecordAuth() {
+        const options = {
+          format: 'mp3',
+          sampleRate: 48000,
+          encodeBitRate: 64000
+        }
+        if(!this.recordAuth) {
+          let recordAuth = await wxApi.authorize('scope.record');
+          this.recorderManager = wx.getRecorderManager()
+          this.setRecorderManager(this.recorderManager)
+          this.listenRecordEvent();
+          this.recorderManager.start(options);
+        }
+        else {
+          this.recorderManager = wx.getRecorderManager()
+          this.setRecorderManager(this.recorderManager)
+          this.listenRecordEvent();
+          this.recorderManager.start(options);
+        }
+
+      },
+      listenAudioEvent() {
+        this.innerAudioContext.onPlay((res) => {
+          this.playRecord = true;
+          this.playTime = 0;
+        });
+        this.innerAudioContext.onError((error) => {
+          console.log('error=',error)
+        });
+        this.innerAudioContext.onEnded((res) => {
+          let result = clearInterval(this.timer);
+          this.timer = null;
+          this.playRecord = false;
+          if(this.hasFile){
+            this.playTime = this.user.duration;
+          }else{
+            this.playTime = this.recordTime;
+          }
+        });
+        this.innerAudioContext.onStop((res) => {
+          clearInterval(this.timer);
+          this.timer = null;
+          this.playRecord = false;
+          if(this.hasFile){
+            this.playTime = this.user.duration;
+          }else{
+            this.playTime = this.recordTime;
+          }
+        });
+      },
+      listenRecordEvent() {
+        this.recorderManager.onStart(() => {
+          this.startRecord = true;
+          if (this.timer) clearInterval(this.timer);
+          this.timer = setInterval(()=>{
+            this.recordTime += 1;
+          },1000);
+        })
+        this.recorderManager.onStop((res) => {
+          clearInterval(this.timer);
+          this.timer = null;
+          const { tempFilePath, duration } = res;
+          this.tempFilePath = tempFilePath;
+          this.playTime = Math.ceil(res.duration/1000);
+          this.initPlay(this.tempFilePath);
+          this.recordTime = this.playTime;
+          this.stopRecord = true;
+          this.startRecord = false;
+        })
+      },
+      reRecord(){
+        this.innerAudioContext.stop();
+        this.startRecord = false;
+        this.recordTime = 0;
+        this.stopRecord = false;
+        this.hasFile = false;
+      },
+      async saveAudio(){
+        let config = {
+          url: 'users/upload_record/',
+          filePath: this.tempFilePath,
+          name: 'file',
+          formData: {
+            duration: this.playTime
+          }
+        }
+        let uploadInfo = await wxApi.uploadFile(config);
+        if(JSON.parse(uploadInfo.data).errno == 0) {
+          this.setUserInfo(JSON.parse(uploadInfo.data).results.user);
+          if(this.rootPage === 'mine') {
+            $Toast({
+              content: '保存成功',
+              type: 'success'
+            })
+            this.user = JSON.parse(uploadInfo.data).results.user;
+            this.playRecord = false;
+            this.playTime = this.user.duration;
+            this.initPlay(this.user.file);
+            this.hasFile = true;
+          }
+          else {
+            $Toast({
+              content: '保存成功',
+              type: 'success'
+            })
+            setTimeout(() => {
+              wx.redirectTo({url: '/pages/uploadact/main?root=record'});
+            }, 1000);
+
+          }
+        }
+        else {
+          $Toast({
+            content: JSON.parse(uploadInfo.data).results,
+            type: 'error'
+          })
+        }
+      }
     }
 }
 </script>
@@ -311,7 +334,7 @@ export default {
 <style lang="less">
 @import "../../assets/style/base.less";
 .record-page {
-    padding-top: 100px;
+    padding-top: 38px;
     font-family: "PingFangSC-Medium";
     color: #333;
     font-size: 16px;
@@ -319,6 +342,9 @@ export default {
     box-sizing: border-box;
     // background-color: #fff;
     background: -webkit-linear-gradient(top,#fffef8, #fff9e0);
+    .has-file-wrap {
+      padding-top: 18px;
+    }
     .textarea {
         box-sizing: border-box;
         width: 100%;
@@ -330,8 +356,11 @@ export default {
         background-color: #FAFAFA;
     }
     .tip-text {
-        margin-bottom: 17px;
+        margin-bottom: 13px;
         text-align: center;
+        margin-top: 44px;
+        line-height: 14px;
+        font-size: 14px;
     }
     .time-text {
         height: 30px;
@@ -339,22 +368,27 @@ export default {
         text-align: center;
         font-size: 30px;
         color: #666;
-        margin-bottom: 17px;
+        margin-bottom: 14px;
+        margin-top: 67px;
+        line-height: 30px;
+    }
+    .time-text-2 {
+      margin-top: 9px;
+      margin-top: -4px;
     }
     .operator-container {
         position: relative;
         display: flex;
         height: 127px;
         justify-content: center;
-        margin-bottom: 40px;
         align-items: center;
         .operator-text1 {
             position: absolute;
-            left: 18px;
+            left: 43px;
+            top: 40px;
         }
         .circle-btn {
             flex: 1;
-            position: absolute;
             width: 127px;
             height: 127px;
             display: flex;
@@ -387,7 +421,8 @@ export default {
         }
         .operator-text2 {
             position: absolute;
-            right: 18px;
+            right: 43px;
+            top: 40px;
         }
         .operator-text1,
         .operator-text2 {

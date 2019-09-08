@@ -42,11 +42,9 @@
         </form>
       </div>
       <div class="tag-wrap">
-        <div
-          class="tag"
-          :key="r.singer_id"
-          v-for="r in recommendSingers"
-          @click="onSingerClick(r)">{{r.singer_name}}</div>
+        <form v-for="r in recommendSingers" :key="r.singer_id"  report-submit @submit="onSingerClick"  :data-item="r">
+          <button class="tag" form-type="submit">{{r.singer_name}}</button>
+        </form>
       </div>
     </div>
 
@@ -64,17 +62,17 @@
         </form>
       </div>
       <div class="tag-wrap">
-        <div
-          class="tag"
-          :key="r.id"
-          v-for="r in recommendSongs"
-          @click="onSongClick(r)">{{r.song}}</div>
+        <form v-for="r in recommendSongs" :key="r.id"  report-submit @submit="onSongClick"  :data-item="r">
+          <button class="tag" form-type="submit">{{r.song}}</button>
+        </form>
       </div>
     </div>
 
     <!-- 搜索结果 -->
     <scroll-view v-if="searchResults.length" class="results-wrap" scroll-y>
-      <div class="result-item" v-for="r in searchResults" :key="r.id" @click="onSongClick(r)">{{r.song}}</div>
+      <form v-for="r in searchResults" :key="r.id"  report-submit @submit="onSongClick"  :data-item="r">
+        <button class="result-item" form-type="submit">{{r.song}}</button>
+      </form>
     </scroll-view>
     <i-toast id="toast" />
   </div>
@@ -126,7 +124,10 @@ export default {
     /*
      * 点击歌手标签
      */
-    onSingerClick(singer) {
+    onSingerClick(e) {
+      const formId = e.mp.detail.formId;
+      this.collectionFormId(formId);
+      let singer = e.currentTarget.dataset.item;
       this.keywords = singer.singer_name;
       this.onSearch();
     },
@@ -155,7 +156,10 @@ export default {
     /*
      * 点击歌曲标签
      */
-    onSongClick(song) {
+    onSongClick(e) {
+      const formId = e.mp.detail.formId;
+      this.collectionFormId(formId);
+      let song = e.currentTarget.dataset.item;
       wx.setStorageSync('song', song);
       wx.setStorageSync('newSong', true);
       wx.navigateBack();
@@ -407,6 +411,7 @@ button:after {
       font-size: 16px;
       color: #333333;
       font-weight: bold;
+      text-align: left;
     }
   }
 }
