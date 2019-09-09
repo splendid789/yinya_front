@@ -8,10 +8,12 @@
                 <div @click="copyWechatNum(respondent.wechat_number)" class="user-wechat-account">微信号: {{respondent.wechat_number}}</div>
             </div>
             <div class="audio-container" >
-                <div class="audio-widget" @click="audioRespondent()">
-                    <img :src="'../../assets/images/' + (!respondentFlag ? 'exchange-play.png': 'exchange-pause.png') " alt="" class="icon-audio">
-                    <span >{{respondent.duration}}s</span>
-                </div>
+              <form report-submit @submit="audioRespondent">
+                <button form-type="submit" class="audio-widget">
+                  <img :src="'../../assets/images/' + (!respondentFlag ? 'exchange-play.png': 'exchange-pause.png') " alt="" class="icon-audio">
+                  <span >{{respondent.duration}}s</span>
+                </button>
+              </form>
             </div>
         </div>
         <div class="user-info-right">
@@ -21,10 +23,12 @@
                 <div @click="copyWechatNum(applicant.wechat_number)" class="user-wechat-account">微信号: {{applicant.wechat_number}}</div>
             </div>
             <div class="audio-container" >
-                <div class="audio-widget" @click="audioApplicant()">
+                <form report-submit @submit="audioApplicant">
+                  <button form-type="submit" class="audio-widget">
                     <img :src="'../../assets/images/' + (!applicantFlag ? 'exchange-play.png': 'exchange-pause.png') " alt="" class="icon-audio">
                     <span >{{applicant.duration}}s</span>
-                </div>
+                  </button>
+                </form>
             </div>
         </div>
     </div>
@@ -154,20 +158,36 @@ export default {
           this.applicantFlag = false;
         });
       },
-      audioRespondent(){
+      async audioRespondent(e){
+        let formId = e.mp.detail.formId;
+        await this.collectionFormId(formId);
         this.innerAudioContext.stop();
         this.applicantFlag = false;
         this.innerAudioContext.src = this.respondent.file;
         !this.respondentFlag ? this.innerAudioContext.play() : this.innerAudioContext.stop();
         this.listenAudioRespondentEvent();
       },
-      audioApplicant(){
+      async audioApplicant(e){
+        let formId = e.mp.detail.formId;
+        await this.collectionFormId(formId);
         this.innerAudioContext.stop();
         this.respondentFlag = false;
         this.innerAudioContext.src = this.applicant.file;
         !this.applicantFlag ? this.innerAudioContext.play() : this.innerAudioContext.stop();
         this.listenAudioApplicantEvent();
-      }
+      },
+      async collectionFormId(formid) {
+        let config = {
+          url: 'exchange/collect_formid/',
+          method: 'post',
+          data: {formid}
+        };
+        let resInfo = await wxApi.request(config);
+        if(resInfo.errno === 0) {
+        }
+        else {
+        }
+      },
     },
   onUnload () {
     console.log('exchange 页面卸载');

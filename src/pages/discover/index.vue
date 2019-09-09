@@ -1,5 +1,11 @@
 <template>
 <div class="discover-page">
+  <div class="app-toast" v-if="showToast">
+    <img src="../../assets/images/app-toast.png" class="back-img"/>
+    <div class="toast-text">添加到我的小程序，更方便访问</div>
+    <img src="../../assets/images/toast-logo.png" class="toast-logo"/>
+    <img src="../../assets/images/toast-close.png" class="toast-close" @click="closeToast"/>
+  </div>
   <div class="stack" v-if="friends.length > 0">
     <div class="stack-item hideSlow" v-for="(item, index) in friends" :key="index"
          :style="index === current
@@ -132,7 +138,9 @@ export default {
           isExchangeOk: false,
           showMsg:false,
           message1:'',
-          message2:''
+          message2:'',
+          showToast:false,
+          appToastCount:0
         }
     },
     computed: {
@@ -194,6 +202,19 @@ export default {
 
       this.friends = await this.getFriendInfo(10);
       //this.playAudio(this.current);
+      let count = wx.getStorageSync('appToastCount');
+      this.appToastCount = parseInt(count?count:0);
+      if(this.appToastCount < 2){
+        setTimeout(()=>{
+          this.showToast = true;
+          setTimeout(()=>{
+            this.showToast = false;
+          },3000)
+        },10000)
+      }
+      if(this.appToastCount < 2){
+        wx.setStorageSync('appToastCount',this.appToastCount+1);
+      }
     },
     onHide() {
       this.innerAudioContext.destroy()
@@ -209,6 +230,9 @@ export default {
     },
     methods: {
       ...mapMutations(['setUserInfoAuth', 'setUserInfo', 'setInnerAudioContext', 'setIsFirst']),
+      closeToast(){
+        this.showToast  = false;
+      },
       closeMsg(e){
         let formId = e.mp.detail.formId;
         this.collectionFormId(formId);
@@ -438,6 +462,49 @@ export default {
   box-sizing: border-box;
   font-family: "PingFangSC-Semibold";
   background: -webkit-linear-gradient(top,#fffef8, #fff9e0);
+  .app-toast{
+    width: 255px;
+    height: 36px;
+    z-index: 10;
+    position: fixed;
+    top: 0;
+    left: 60px;
+    .back-img{
+      width: 255px;
+      height: 36px;
+      z-index: 11;
+    }
+    .toast-text{
+      width: 255px;
+      height: 36px;
+      line-height: 36px;
+      text-align: center;
+      font-size:12px;
+      font-family:Source Han Sans CN;
+      font-weight:400;
+      color:#FFFFFF;
+      z-index: 12;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    .toast-logo{
+      width: 20px;
+      height: 20px;
+      z-index: 13;
+      position: absolute;
+      top: 10px;
+      left: 10px;
+    }
+    .toast-close{
+      width: 12px;
+      height: 12px;
+      z-index: 13;
+      position: absolute;
+      top: 14px;
+      right: 10px;
+    }
+  }
   .stack {
     top: 54px;
     width: 240px;

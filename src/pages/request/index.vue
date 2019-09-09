@@ -10,13 +10,17 @@
             <div class="card-content">
                 <img :src="requestInfo.applicant.head_img" class="user-avatar" alt="">
                 <div class="user-nickname">{{requestInfo.applicant.nickname}}</div>
-                <div class="audio-operator" @click="audioOperator">
+                <form report-submit @submit="audioOperator">
+                  <button form-type="submit" class="audio-operator">
                     <img :src="'../../assets/images/' + (!playFlag ? 'icon-play.png': 'icon-pause.png') " alt="">
-                </div>
+                  </button>
+                </form>
             </div>
         </div>
         <div class="exchange-pic">
-            <div class="btn-exchange" @click="exchange">确认互加</div>
+            <form report-submit @submit="exchange">
+              <button form-type="submit" class="btn-exchange">确认互加</button>
+            </form>
             <div class="tip-text">确认后将收到对方微信号，可互加好友</div>
         </div>
     </div>
@@ -143,7 +147,9 @@ export default {
         }
         await wxApi.request(config)
       },
-      async exchange() {
+      async exchange(e) {
+        let formId = e.mp.detail.formId;
+        await this.collectionFormId(formId);
           console.log('exchange:');
           if(!this.applyID) {
               if(!this.userInfo.file || !this.userInfo.wechat_number) {
@@ -174,7 +180,9 @@ export default {
           }
       },
       // 播放/暂停录音
-      audioOperator() {
+      async audioOperator(e) {
+        let formId = e.mp.detail.formId;
+        await this.collectionFormId(formId);
         !this.playFlag ? this.playAudio() : this.pauseAudio();
       },
       // 播放录音
@@ -205,6 +213,18 @@ export default {
             console.log('播放结束', res);
             this.playFlag = false;
           });
+      },
+      async collectionFormId(formid) {
+        let config = {
+          url: 'exchange/collect_formid/',
+          method: 'post',
+          data: {formid}
+        };
+        let resInfo = await wxApi.request(config);
+        if(resInfo.errno === 0) {
+        }
+        else {
+        }
       },
     },
     onUnload () {
