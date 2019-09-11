@@ -28,12 +28,19 @@
       </div>
     </div>
   </div>
-  <div v-if="!isExchangePic">
-    <form report-submit @submit="exchange" class="exchange-pic">
-      <button class="btn-exchange" form-type="submit">加Ta微信</button>
-    </form>
+  <div v-if="userInfo">
+    <div v-if="!isExchangePic">
+      <form report-submit @submit="exchange" class="exchange-pic">
+        <button class="btn-exchange" form-type="submit">加Ta微信</button>
+      </form>
+    </div>
+    <div v-if="isExchangePic" :class="{'exchange-pic': true, 'showAnimation': isExchangePic}" style="color: #F4CF24; font-size: 16px;">已通知对方</div>
   </div>
-  <div v-if="isExchangePic" :class="{'exchange-pic': true, 'showAnimation': isExchangePic}" style="color: #F4CF24; font-size: 16px;">已通知对方</div>
+  <div v-else>
+    <div class="exchange-pic">
+      <div class="btn-exchange" @click="login">加Ta微信</div>
+    </div>
+  </div>
   <van-dialog
     use-slot
     :show="isUploadFile"
@@ -104,6 +111,26 @@
     </div>
   </div>
   </van-dialog>
+  <van-dialog
+    use-slot
+    :show="showLogin"
+    :showConfirmButton="false"
+    :showCancelButton="false"
+  >
+    <div class="dialog-container">
+      <div class="top-border"></div>
+      <div class="dialog-content" style="padding-right: 0;padding-left: 0;">
+        <div class="dialog-text">
+          <div>登录后即可与对方申请互加微信</div>
+        </div>
+        <div class="dialog-login">
+          <button class="unlogin-btn" @click="closeLogin">暂不登录</button>
+          <button class="login-btn"  open-type="getUserInfo" @getuserinfo="getUserInfo">立即登录</button>
+        </div>
+        <!--<img @click="closeMsg" src="../../assets/images/icon-close.png" alt="" class="close">-->
+      </div>
+    </div>
+  </van-dialog>
   <i-toast id="toast" />
 </div>
 </template>
@@ -140,36 +167,14 @@ export default {
           message1:'',
           message2:'',
           showToast:false,
-          appToastCount:0
+          appToastCount:0,
+          showLogin:false
         }
     },
     computed: {
         ...mapGetters(['userInfo', 'isFirst']),
     },
     async onShow() {
-      console.log('userInfo:',this.userInfo)
-      if(!this.userInfo){
-        let token = mpvue.getStorageSync('token');
-        console.log('token',token)
-        if(!token){
-          $Toast({
-            content: '错误码:10000',
-            type: 'error'
-          });
-        }
-        let config = {
-          url: 'users/me/',
-          method: 'get'
-        }
-        let userInfo = await this.ajaxGetUserInfo();
-        this.setUserInfo(userInfo.user);
-      }
-      if(this.userInfo.file && this.userInfo.wechat_number) {
-        this.isUploadFile = false;
-      }
-      if(!this.userInfo.file || !this.userInfo.wechat_number) {
-        this.setIsFirst(true);
-      }
       this.innerAudioContext = mpvue.createInnerAudioContext();
       mpvue.setInnerAudioOption({
         obeyMuteSwitch: false
@@ -181,6 +186,25 @@ export default {
 //        setTimeout(()=>{
 //          this.innerAudioContext.stop();
 //        },100)
+      }
+      console.log('userInfo:',this.userInfo)
+      if(this.userInfo){
+        if(this.userInfo.file && this.userInfo.wechat_number) {
+          this.isUploadFile = false;
+        }
+        if(!this.userInfo.file || !this.userInfo.wechat_number) {
+          this.setIsFirst(true);
+        }
+      }else{
+        let authSetting = await wxApi.getSetting();
+        if(authSetting.authSetting['scope.userInfo']) {
+          let config = {
+            url: 'users/me/',
+            method: 'get'
+          }
+          let userInfo = await this.ajaxGetUserInfo();
+          this.setUserInfo(userInfo.user);
+        }
       }
     },
     async onLoad() {
@@ -230,13 +254,43 @@ export default {
     },
     methods: {
       ...mapMutations(['setUserInfoAuth', 'setUserInfo', 'setInnerAudioContext', 'setIsFirst']),
-      closeToast(){
-        this.showToast  = false;
+      login(){
+        this.showLogin = true;
       },
-      closeMsg(e){
-        let formId = e.mp.detail.formId;
-        this.collectionFormId(formId);
-        this.showMsg = false;
+      closeLogin(){
+        this.showLogin = false;
+      },
+      async getUserInfo(e) {
+        this.showLogin = false;
+        console.log('getUserInfo', e);
+        let codeInfo = await wxApi.login();
+        let userInfo = await wxApi.getUserInfo();
+        let loginConfig = (typeof e) == 'undefined' ? Object.assign(codeInfo, userInfo) : Object.assign(e.mp.detail, codeInfo);
+        let loginRes = await this.doLogin(loginConfig)
+        if(loginRes.errno == 0) {
+          this.setUserInfo(loginRes.results.user);
+          wx.setStorageSync('token', loginRes.results.token);
+          this.onLoad();
+        }
+        else {
+          $Toast({
+            content: loginRes.message,
+            type: 'error'
+          })
+        }
+      },
+      async doLogin(params) {
+        let config = {
+          url: 'users/wapp_login/',
+          method: 'post',
+          data: {
+            code: params.code,
+            encrypted_data: params.encryptedData,
+            iv: params.iv
+          }
+        }
+        let res = await wxApi.request(config);
+        return res;
       },
       async ajaxGetUserInfo() {
         let config = {
@@ -254,6 +308,14 @@ export default {
           })
           return;
         }
+      },
+      closeToast(){
+        this.showToast  = false;
+      },
+      closeMsg(e){
+        let formId = e.mp.detail.formId;
+        this.collectionFormId(formId);
+        this.showMsg = false;
       },
       closeDialog(e) {
         let formId = e.mp.detail.formId;
@@ -612,6 +674,7 @@ export default {
         color: #333;
         font-size: 16px;
         font-family: "PingFangSC-Medium";
+        font-weight: 500;
         line-height: 24px;
         text-align: center;
         margin-bottom: 56px;
@@ -630,6 +693,47 @@ export default {
           background: -webkit-linear-gradient(left,#FBCF00, #FB9F00);
         }
         .upload-btn::after{
+          border: none;
+        }
+      }
+      .dialog-login{
+        width: 100%;
+        height: 40px;
+        overflow: hidden;
+        .unlogin-btn{
+          width: 120px;
+          height: 40px;
+          font-size:16px;
+          font-family:PingFang SC;
+          font-weight:600;
+          color:#AAAAAA;
+          text-align: center;
+          line-height: 40px;
+          float: left;
+          margin-left: 30px;
+          background: #DADADA;
+          box-shadow:0px 0px 3px 0px #DADADA;
+          border-radius:2px;;
+        }
+        .unlogin-btn::after{
+          border: none;
+        }
+        .login-btn {
+          width: 120px;
+          height: 40px;
+          font-size:16px;
+          font-family:PingFang SC;
+          font-weight:600;
+          color: #ffffff;
+          text-align: center;
+          line-height: 40px;
+          float: right;
+          margin-right: 30px;
+          background: -webkit-linear-gradient(left,#FBCF00, #FB9F00);
+          box-shadow:0px 0px 3px 0px #D8CCBD;
+          border-radius:2px;
+        }
+        .login-btn::after{
           border: none;
         }
       }
