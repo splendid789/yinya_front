@@ -59,11 +59,9 @@
             <button class="upload-btn" form-type="submit">立即完善</button>
           </form>
         </div>
-        <form report-submit @submit="closeDialog">
-          <button class="close-btn" form-type="submit">
-            <img  src="../../assets/images/icon-close.png" alt="" class="close">
-          </button>
-        </form>
+        <div class="close-btn">
+          <img @click="closeDialog"  src="../../assets/images/icon-close.png" alt="" class="close">
+        </div>
       </div>
     </div>
   </van-dialog>
@@ -263,6 +261,10 @@ export default {
       async getUserInfo(e) {
         this.showLogin = false;
         console.log('getUserInfo', e);
+        wx.showLoading({
+          title: '正在登录',
+          mask:true
+        })
         let codeInfo = await wxApi.login();
         let userInfo = await wxApi.getUserInfo();
         let loginConfig = (typeof e) == 'undefined' ? Object.assign(codeInfo, userInfo) : Object.assign(e.mp.detail, codeInfo);
@@ -270,9 +272,11 @@ export default {
         if(loginRes.errno == 0) {
           this.setUserInfo(loginRes.results.user);
           wx.setStorageSync('token', loginRes.results.token);
+          wx.hideLoading()
           this.onLoad();
         }
         else {
+          wx.hideLoading()
           $Toast({
             content: loginRes.message,
             type: 'error'
@@ -317,13 +321,10 @@ export default {
         this.collectionFormId(formId);
         this.showMsg = false;
       },
-      closeDialog(e) {
-        let formId = e.mp.detail.formId;
-        this.collectionFormId(formId);
+      closeDialog() {
         this.isUploadFile = false;
       },
       toUpload(e) {
-        console.log('----------------------',e)
         let formId = e.mp.detail.formId;
         this.collectionFormId(formId);
         console.log('file is ',!this.userInfo.file)
@@ -475,8 +476,6 @@ export default {
       },
       async exchange(e) {
         let formId = e.mp.detail.formId;
-        console.log(!this.userInfo.file)
-        console.log(!this.userInfo.wechat_number)
         if(!this.userInfo.file || !this.userInfo.wechat_number) {
           this.isUploadFile = true;
           return;

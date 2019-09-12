@@ -141,6 +141,10 @@ export default {
       async getUserInfo(e) {
         this.showLogin = false;
         console.log('getUserInfo', e);
+        wx.showLoading({
+          title: '正在登录',
+          mask:true
+        })
         let codeInfo = await wxApi.login();
         let userInfo = await wxApi.getUserInfo();
         let loginConfig = (typeof e) == 'undefined' ? Object.assign(codeInfo, userInfo) : Object.assign(e.mp.detail, codeInfo);
@@ -148,9 +152,11 @@ export default {
         if(loginRes.errno == 0) {
           this.setUserInfo(loginRes.results.user);
           wx.setStorageSync('token', loginRes.results.token);
+          wx.hideLoading()
           this.init();
         }
         else {
+          wx.hideLoading()
           $Toast({
             content: loginRes.message,
             type: 'error'
