@@ -267,7 +267,7 @@ export default {
 }
 .nouser-container{
   width: 375px;
-  height: 555px;
+  height: 100vh;
   box-sizing: border-box;
   background: -webkit-linear-gradient(top,#fffef8, #fff9e0);
   .line-1{

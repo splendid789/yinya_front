@@ -323,8 +323,11 @@ export default {
         this.isUploadFile = false;
       },
       toUpload(e) {
+        console.log('----------------------',e)
         let formId = e.mp.detail.formId;
         this.collectionFormId(formId);
+        console.log('file is ',!this.userInfo.file)
+        console.log('wechat_number is ',!this.userInfo.wechat_number)
         if(!this.userInfo.file) {
           let url = '/pages/record/main?root=discover';
           this.isUploadFile = false;

@@ -395,7 +395,7 @@ export default {
     }
   .nouser-container{
     width: 375px;
-    height: 555px;
+    height: 100vh;
     .line-1{
       width: 375px;
       height:24px;
