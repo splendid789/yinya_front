@@ -77,7 +77,7 @@ export default {
       if(res.form === 'button') return {};
       return {
         title: '互相喜欢对方声音\r\n互加微信成为好友',
-        path: '/pages/index/main',
+        path: '/pages/discover/main',
         imageUrl: '/assets/images/share.jpg',
         success: function(res) {}
       }
@@ -98,6 +98,11 @@ export default {
           title: '正在登录',
           mask:true
         })
+        let authSetting = await wxApi.getSetting();
+        if(!authSetting.authSetting['scope.userInfo']) {
+          wx.hideLoading()
+          return;
+        }
         let codeInfo = await wxApi.login();
         let userInfo = await wxApi.getUserInfo();
         let loginConfig = (typeof e) == 'undefined' ? Object.assign(codeInfo, userInfo) : Object.assign(e.mp.detail, codeInfo);

@@ -21,6 +21,12 @@ export default {
   padding: 200rpx 0;
   box-sizing: border-box;
 }
+button{
+  background: none;
+}
+button::after{
+  border: none;
+}
 /* this rule will be remove */
 * {
   transition: width 2s;

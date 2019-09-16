@@ -267,7 +267,7 @@ export default {
         width: 100px;
         height: 32px;
         .audio-widget {
-            width: 87px;
+            width: 107px;
             height: 32px;
             align-items: flex-start;
             border-radius: 15px;
