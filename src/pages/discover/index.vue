@@ -17,6 +17,9 @@
          @touchmove="touchMove"
          @touchend="touchEnd">
       <div class="top-border"></div>
+      <button class="card-share" open-type="share" :id="item.id">
+        <img src="../../assets/images/share.png">
+      </button>
       <div class="card-content">
         <img :src="item.head_img" class="user-avatar" alt="">
         <div class="user-nickname">{{item.nickname}}</div>
@@ -166,7 +169,8 @@ export default {
           message2:'',
           showToast:false,
           appToastCount:0,
-          showLogin:false
+          showLogin:false,
+          firstId:null
         }
     },
     computed: {
@@ -201,11 +205,14 @@ export default {
             method: 'get'
           }
           let userInfo = await this.ajaxGetUserInfo();
-          this.setUserInfo(userInfo.user);
+          if(userInfo){
+            this.setUserInfo(userInfo.user);
+          }
         }
       }
     },
-    async onLoad() {
+    async onLoad(options) {
+      this.firstId = this.$root.$mp.query.firstId;
       this.start = {};
       this.end = {};
       this.isOne = true;
@@ -242,12 +249,20 @@ export default {
       this.innerAudioContext.destroy()
     },
     onShareAppMessage: function(res) {
-      if(res.form === 'button') return {};
-      return {
-        title: '互相喜欢对方声音\r\n互加微信成为好友',
-        path: '/pages/discover/main',
-        imageUrl: '/assets/images/share.jpg',
-        success: function(res) {}
+      if(res.from === 'button') {
+        return {
+          title: '发现一枚好听的声音 推荐你听听',
+          path: '/pages/discover/main?firstId='+res.target.id,
+          //imageUrl: '/assets/images/share.jpg',
+          success: function(res) {}
+        }
+      }else{
+        return {
+          title: '互相喜欢对方声音\r\n互加微信成为好友',
+          path: '/pages/discover/main',
+          imageUrl: '/assets/images/share.jpg',
+          success: function(res) {}
+        }
       }
     },
     methods: {
@@ -311,11 +326,11 @@ export default {
           return res.results;
         }
         else {
-          $Toast({
-            content: '错误码:10001',
-            type: 'error'
-          })
-          return;
+//          $Toast({
+//            content: '错误码:10001',
+//            type: 'error'
+//          })
+          return null;
         }
       },
       closeToast(){
@@ -353,6 +368,18 @@ export default {
         this.setIsFirst(false);
       },
       async getFriendInfo(num) {
+        let list = [];
+        if(this.firstId){
+          let config = {
+            url: 'users/find_friend/?first_id='+ this.firstId,
+            method: 'get'
+          };
+          let resInfo = await wxApi.request(config);
+          resInfo.results.forEach(item => {
+            item.playFlag = false;
+            list.push(item)
+          });
+        }
         let config = {
           url: 'users/find_friend/?num=' + num,
           method: 'get'
@@ -360,8 +387,9 @@ export default {
         let resInfo = await wxApi.request(config);
         resInfo.results.forEach(item => {
           item.playFlag = false;
+          list.push(item)
         });
-        return resInfo.results;
+        return list;
       },
       async clickPlay(e){
         let formId = e.mp.detail.formId;
@@ -600,6 +628,21 @@ export default {
       .top-border {
         height: 7px;
         background-color: #F4CF24;
+      }
+      .card-share{
+        display: block;
+        width: 19px;
+        height: 19px;
+        position: absolute;
+        top: 16px;
+        right: 12px;
+        padding: 0;
+        border-radius: 0;
+        image{
+          display: block;
+          width: 19px;
+          height: 19px;
+        }
       }
       .card-content {
         position: absolute;

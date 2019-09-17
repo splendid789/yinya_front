@@ -93,7 +93,9 @@ export default {
             method: 'get'
           }
           let userInfo = await this.ajaxGetUserInfo();
-          this.setUserInfo(userInfo.user);
+          if(userInfo){
+            this.setUserInfo(userInfo.user);
+          }
         }
       }
     },
@@ -191,11 +193,11 @@ export default {
           return res.results;
         }
         else {
-          $Toast({
-            content: '错误码:10001',
-            type: 'error'
-          })
-          return;
+//          $Toast({
+//            content: '错误码:10001',
+//            type: 'error'
+//          })
+          return null;
         }
       },
         async selectTab(e) {
