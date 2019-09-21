@@ -1,11 +1,18 @@
 <template>
-<div>
-    <div v-if="userInfo" class="mine-page">
-      <img :src="userInfo.head_img" alt="" class="avatar">
-      <span class="user-name">{{userInfo.nickname}}</span>
+  <div>
+    <div class="mine-page">
+      <img v-if="userInfo" :src="userInfo.head_img" class="avatar">
+      <img v-else src="../../assets/images/avator.png" class="no-avatar">
+      <span v-if="userInfo" class="user-name">{{userInfo.nickname}}</span>
+
+      <div v-if="!userInfo" class="nouser-container">
+        <div class="line-1">尚未登录</div>
+        <div class="line-2">登录后即可完善个人信息</div>
+        <button class="login-btn"  open-type="getUserInfo" @getuserinfo="getUserInfo">立即登录</button>
+      </div>
 
       <!-- 未上传语音状态 -->
-      <div class="upload-tip-wrap" v-if="!userInfo.file">
+      <div class="upload-tip-wrap" v-if="userInfo&&!userInfo.file">
         <div class="split"></div>
         <div class="tip-title">尚未完善个人信息</div>
         <div class="tip-desc">完善后即可与对方申请互加微信</div>
@@ -13,7 +20,7 @@
       </div>
 
       <!-- 已上传语音状态 -->
-      <div class="item-container" v-if="userInfo.file">
+      <div class="item-container" v-if="userInfo&&userInfo.file">
         <form report-submit @submit="openMyVoice">
           <button form-type="submit" class="mine-account item">
             <div class="left">
@@ -34,13 +41,13 @@
         </form>
       </div>
     </div>
-    <div v-else class="nouser-container">
-      <div class="line-1">尚未登录</div>
-      <div class="line-2">登录后即可使用完整功能</div>
-      <button class="login-btn"  open-type="getUserInfo" @getuserinfo="getUserInfo">立即登录</button>
-    </div>
+    <!--    <div v-else class="nouser-container">-->
+    <!--      <div class="line-1">尚未登录</div>-->
+    <!--      <div class="line-2">登录后即可使用完整功能</div>-->
+    <!--      <button class="login-btn"  open-type="getUserInfo" @getuserinfo="getUserInfo">立即登录</button>-->
+    <!--    </div>-->
     <i-toast id="toast" />
-</div>
+  </div>
 </template>
 
 <script>
@@ -59,21 +66,20 @@ export default {
     },
     async onShow() {
       console.log('userInfo:',this.userInfo)
-      if(this.userInfo){
-        this.init()
-      }else{
-        let authSetting = await wxApi.getSetting();
-        if(authSetting.authSetting['scope.userInfo']) {
-          let config = {
-            url: 'users/me/',
-            method: 'get'
-          }
-          let userInfo = await this.ajaxGetUserInfo();
-          if(userInfo){
-            this.setUserInfo(userInfo.user);
-          }
-        }
-      }
+      this.init()
+      // if(this.userInfo){
+      //   this.init()
+      // }else{
+      //   let authSetting = await wxApi.getSetting();
+      //   if(authSetting.authSetting['scope.userInfo']) {
+      //     let config = {
+      //       url: 'users/me/',
+      //       method: 'get'
+      //     }
+      //     let userInfo = await this.ajaxGetUserInfo();
+      //     this.setUserInfo(userInfo.user);
+      //   }
+      // }
     },
     onShareAppMessage: function(res) {
       if(res.form === 'button') return {};
@@ -94,7 +100,6 @@ export default {
         }
       },
       async getUserInfo(e) {
-        this.showLogin = false;
         console.log('getUserInfo', e);
         wx.showLoading({
           title: '正在登录',
@@ -203,6 +208,11 @@ export default {
         height: 120px;
         border-radius: 50%;
     }
+    .no-avatar {
+      width: 120px;
+      height: 175px;
+      border-radius: 50%;
+    }
     .user-name {
         font-size: 18px;
         font-weight: bold;
@@ -282,7 +292,6 @@ export default {
   width: 375px;
   height: 100vh;
   box-sizing: border-box;
-  background: -webkit-linear-gradient(top,#fffef8, #fff9e0);
   .line-1{
     width: 375px;
     height:24px;
@@ -292,7 +301,7 @@ export default {
     color:#444444;
     line-height:24px;
     text-align: center;
-    padding-top: 189px;
+    padding-top: 39px;
   }
   .line-2{
     width: 375px;

@@ -1,6 +1,6 @@
 <template>
-<div class="message-page" :style="'height: ' + clientHeight + 'px;'">
-  <div v-if="userInfo">
+  <div class="message-page" :style="'height: ' + clientHeight + 'px;'">
+    <!--  <div v-if="userInfo">-->
     <van-tabs type="card" @change="selectTab" nav-class="nav-class" tab-active-class="tabs-active"  tab-class="tabs-class">
       <van-tab class="top-tab" custom-class="tab-class" title="收到申请">
         <div v-if="loadSuccess1">
@@ -51,14 +51,14 @@
         </div>
       </van-tab>
     </van-tabs>
+    <!--  </div>-->
+    <!--  <div v-else class="nouser-container">-->
+    <!--    <div class="line-1">尚未登录</div>-->
+    <!--    <div class="line-2">登录后即可使用完整功能</div>-->
+    <!--    <button class="login-btn"  open-type="getUserInfo" @getuserinfo="getUserInfo">立即登录</button>-->
+    <!--  </div>-->
+    <i-toast id="toast" />
   </div>
-  <div v-else class="nouser-container">
-    <div class="line-1">尚未登录</div>
-    <div class="line-2">登录后即可使用完整功能</div>
-    <button class="login-btn"  open-type="getUserInfo" @getuserinfo="getUserInfo">立即登录</button>
-  </div>
-  <i-toast id="toast" />
-</div>
 </template>
 
 <script>
@@ -83,21 +83,20 @@ export default {
     },
     async onShow() {
       console.log('userInfo:',this.userInfo)
-      if(this.userInfo){
-        this.init()
-      }else{
-        let authSetting = await wxApi.getSetting();
-        if(authSetting.authSetting['scope.userInfo']) {
-          let config = {
-            url: 'users/me/',
-            method: 'get'
-          }
-          let userInfo = await this.ajaxGetUserInfo();
-          if(userInfo){
-            this.setUserInfo(userInfo.user);
-          }
-        }
-      }
+      this.init()
+      // if(this.userInfo){
+      //   this.init()
+      // }else{
+      //   let authSetting = await wxApi.getSetting();
+      //   if(authSetting.authSetting['scope.userInfo']) {
+      //     let config = {
+      //       url: 'users/me/',
+      //       method: 'get'
+      //     }
+      //     let userInfo = await this.ajaxGetUserInfo();
+      //     this.setUserInfo(userInfo.user);
+      //   }
+      // }
     },
     onHide(){
         this.loadSuccess1 = false;
@@ -137,8 +136,13 @@ export default {
         }).exec();
         this.messageArr1 = [];
         this.messageArr2 = [];
-        await this.getMessage(0);
-        await this.getMessage(1);
+        if(this.userInfo){
+            await this.getMessage(0);
+            await this.getMessage(1);
+        }else{
+            this.loadSuccess1 = true;
+            this.loadSuccess2 = true;
+        }
       },
       async getUserInfo(e) {
         this.showLogin = false;
@@ -201,7 +205,9 @@ export default {
         }
       },
         async selectTab(e) {
-            this.loadSuccess = false;
+            if(!this.userInfo){
+                return;
+            }
             this.flag = e.mp.detail.index;
             setTimeout(() => {
                 wx.createSelectorQuery().selectAll('.top-tab').boundingClientRect( (rect) => {
