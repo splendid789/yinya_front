@@ -258,7 +258,7 @@ export default {
         }
       }else{
         return {
-          title: '互相喜欢对方声音\r\n互加微信成为好友',
+          title: '互相喜欢 互加微信',
           path: '/pages/discover/main',
           imageUrl: '/assets/images/share.jpg',
           success: function(res) {}
@@ -379,6 +379,7 @@ export default {
             item.playFlag = false;
             list.push(item)
           });
+          this.firstId = null;
         }
         let config = {
           url: 'users/find_friend/?num=' + num,
@@ -631,17 +632,18 @@ export default {
       }
       .card-share{
         display: block;
-        width: 19px;
-        height: 19px;
+        width: 30px;
+        height: 30px;
         position: absolute;
-        top: 16px;
-        right: 12px;
+        top: 6px;
+        right: 2px;
         padding: 0;
         border-radius: 0;
         image{
           display: block;
-          width: 19px;
-          height: 19px;
+          width: 20px;
+          height: 20px;
+          margin: 5px auto;
         }
       }
       .card-content {
