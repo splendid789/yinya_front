@@ -38,6 +38,7 @@
       </form>
     </div>
     <div v-if="isExchangePic" :class="{'exchange-pic': true, 'showAnimation': isExchangePic}" style="color: #F4CF24; font-size: 16px;">已通知对方</div>
+    <!-- <div v-if="isExchangePic">23333</div> -->
   </div>
   <div v-else>
     <div class="exchange-pic">
@@ -139,6 +140,7 @@
 <script>
 import {mapMutations, mapGetters} from 'vuex';
 import WxApi from '../../utils/WxApi'
+import Toast from '../../../dist/wx/static/vant/toast/toast';
 const wxApi = new WxApi();
 const { $Toast } = require('../../../static/iview/base/index');
 export default {
@@ -228,7 +230,7 @@ export default {
       this.animation = false;
       this.swipe = false;
       this.friends = [];
-
+      this.videoAd=null;
       this.friends = await this.getFriendInfo(10);
       //this.playAudio(this.current);
       let count = wx.getStorageSync('appToastCount');
@@ -244,6 +246,19 @@ export default {
       if(this.appToastCount < 2){
         wx.setStorageSync('appToastCount',this.appToastCount+1);
       }
+      // 在页面中定义激励视频广告
+      let videoAd = null
+
+      在页面onLoad回调事件中创建激励视频广告实例
+      if (wx.createRewardedVideoAd) {
+        this.videoAd = wx.createRewardedVideoAd({
+          adUnitId: 'adunit-b2d75bd08fbdda3f'
+        })
+        this.videoAd.onLoad(() => {})
+        this.videoAd.onError((err) => {})
+        this.videoAd.onClose((res) => {})
+      }
+
     },
     onHide() {
       this.innerAudioContext.destroy()
@@ -508,45 +523,111 @@ export default {
         else {
         }
       },
-      async exchange(e) {
+      exchange(e) {
+        console.log("zouzheli")
+
         let formId = e.mp.detail.formId;
         if(!this.userInfo.file || !this.userInfo.wechat_number) {
           this.isUploadFile = true;
           return;
         }
-        await this.collectionFormId(formId);
-        let config = {
-          url: 'exchange/',
-          method: 'post',
-          data: {
-            user_id: this.friends[this.current].id
-          }
-        }
-        let resInfo = await wxApi.request(config);
-        if(resInfo.errno === 0){
-          this.isExchangePic = true;
-          setTimeout(() => {
-            if(this.isFirst) {
-              this.isExchangeOk = true;
+
+        let spl_a = false
+        // this.videoAd.show()
+        this.videoAd.show().catch(() => {
+          // 失败重试
+          this.videoAd.load()
+            .then(() => this.videoAd.show())
+            .catch(err => {
+              console.log('激励视频 广告显示失败')
+            })
+        })
+        var a=false
+        this.videoAd.onClose(res => {
+            // 用户点击了【关闭广告】按钮
+            if (res && res.isEnded) {
+              console.log("kanwan")
+              // spl_a = true
+              let config = {
+                url: 'exchange/',
+                method: 'post',
+                data: {
+                  user_id: this.friends[this.current].id
+                }
+              }
+              let resInfo = wxApi.request(config);
+              resInfo.then((res)=>{
+                console.log("res--", res)
+                if(res.errno === 0){
+                  this.isExchangePic = true;
+                  setTimeout(() => {
+                    if(this.isFirst) {
+                    this.isExchangeOk = true;
+                    }
+                  }, 800);
+                }
+                if(res.errno === 407){
+                  this.isExchangePic = true;
+                  setTimeout(() => {
+                    if(this.isFirst) {
+                    this.isExchangeOk = true;
+                    }
+                  }, 800);
+                  this.message1 = '一天只能与15人申请互加微信';
+                  this.message2 = '今日剩余5个申请机会';
+                  this.showMsg = true;
+                }
+                if(res.errno === 408){
+                  this.message1 = '申请机会已用完';
+                  this.message2 = '明日0点更新';
+                  this.showMsg = true;
+                }
+              })
+              // 正常播放结束，可以下发游戏奖励
+            } else {
+              // 播放中途退出，不下发游戏奖励
+              console.log("meikanwan")
+              $Toast({
+                content: "看完广告才能加Ta微信哦!",
+                type: 'error'
+              })
             }
-          }, 800);
-        }
-        if(resInfo.errno === 407){
-          this.isExchangePic = true;
-          setTimeout(() => {
-            if(this.isFirst) {
-              this.isExchangeOk = true;
-            }
-          }, 800);
-          this.message1 = '一天只能与15人申请互加微信';
-          this.message2 = '今日剩余5个申请机会';
-          this.showMsg = true;
-        }
-        if(resInfo.errno === 408){
-          this.message1 = '申请机会已用完';
-          this.message2 = '明日0点更新';
-          this.showMsg = true;
-        }
+        })
+        // console.log("开始申请好友")
+        // await this.collectionFormId(formId);
+        // let config = {
+        //   url: 'exchange/',
+        //   method: 'post',
+        //   data: {
+        //     user_id: this.friends[this.current].id
+        //   }
+        // }
+        // let resInfo = wxApi.request(config);
+        // console.log("resInfo---",resInfo)
+        // if(resInfo.errno === 0){
+        //   this.isExchangePic = true;
+        //   setTimeout(() => {
+        //     if(this.isFirst) {
+        //       this.isExchangeOk = true;
+        //     }
+        //   }, 800);
+        // }
+        // if(resInfo.errno === 407){
+        //   this.isExchangePic = true;
+        //   setTimeout(() => {
+        //     if(this.isFirst) {
+        //       this.isExchangeOk = true;
+        //     }
+        //   }, 800);
+        //   this.message1 = '一天只能与15人申请互加微信';
+        //   this.message2 = '今日剩余5个申请机会';
+        //   this.showMsg = true;
+        // }
+        // if(resInfo.errno === 408){
+        //   this.message1 = '申请机会已用完';
+        //   this.message2 = '明日0点更新';
+        //   this.showMsg = true;
+        // }
       },
     }
 }

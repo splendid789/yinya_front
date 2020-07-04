@@ -24,6 +24,7 @@
 	"projectname": "voice-yeah",
 	"simulatorPluginLibVersion": {},
 	"simulatorType": "wechat",
+	"libVersion": "2.11.3",
 	"condition": {
 		"search": {
 			"current": -1,
